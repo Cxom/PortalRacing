@@ -6,5 +6,12 @@
 !/Assets/
 !/ProjectSettings/
 
+# Not included (for now) for size
 /Assets/PolygonPrototype/
 !/Assets/PolygonPrototye
+/Assets/Mirror/
+
+# Not included because editor or temporary
+/Assets/tripolygon*
+/Assets/ParrelSync*
+/Assets/TemporaryThirdParty*
