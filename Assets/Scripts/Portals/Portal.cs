@@ -31,24 +31,7 @@ public class Portal : MonoBehaviour
         // trackedTravellers
         screen.material.SetInt ("displayMask", 1);
     }
-
-    void CreateViewTexture()
-    {
-        if (viewTexture == null || viewTexture.width != Screen.width || viewTexture.height != Screen.height)
-        {
-            if (viewTexture != null)
-            {
-                viewTexture.Release();
-            }
-            viewTexture = new RenderTexture(Screen.width, Screen.height,  0);
-            // Render the view from the portal camera to the view texture
-            portalCam.targetTexture = viewTexture;
-            // Display the view texture on the screen of the linked portal
-            // TODO Change for dynamic portals (link may not exist)
-            linkedPortal.screen.material.SetTexture("_MainTex", viewTexture);
-        }
-    }
-
+    
     // Called just before the player camera is rendered
     public void Render(ScriptableRenderContext renderContext, Camera[] cams)
     {
@@ -60,6 +43,12 @@ public class Portal : MonoBehaviour
                 return;
             }
             playerCam = Camera.main;
+        }
+        
+        // TODO This check may need to be updated with more cameras that can see portals
+        if (!VisibleFromCamera(linkedPortal.screen, playerCam))
+        {
+            return;
         }
         
         CreateViewTexture();
@@ -82,4 +71,26 @@ public class Portal : MonoBehaviour
         screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
     }
 
+    static bool VisibleFromCamera(Renderer renderer, Camera camera) {
+        Plane[] viewFrustumPlanes = GeometryUtility.CalculateFrustumPlanes(camera);
+        return GeometryUtility.TestPlanesAABB(viewFrustumPlanes, renderer.bounds);
+    }
+    
+    void CreateViewTexture()
+    {
+        if (viewTexture == null || viewTexture.width != Screen.width || viewTexture.height != Screen.height)
+        {
+            if (viewTexture != null)
+            {
+                viewTexture.Release();
+            }
+            viewTexture = new RenderTexture(Screen.width, Screen.height,  0);
+            // Render the view from the portal camera to the view texture
+            portalCam.targetTexture = viewTexture;
+            // Display the view texture on the screen of the linked portal
+            // TODO Change for dynamic portals (link may not exist)
+            linkedPortal.screen.material.SetTexture("_MainTex", viewTexture);
+        }
+    }
+    
 }
