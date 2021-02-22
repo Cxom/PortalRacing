@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 public class Portal : MonoBehaviour
 {
@@ -26,8 +27,9 @@ public class Portal : MonoBehaviour
     {
         playerCam = Camera.main;
         portalCam = GetComponentInChildren<Camera>();
-        // portalCam.enabled = false; // We want to manually control this camera
+        portalCam.enabled = false; // We want to manually control this camera
         // trackedTravellers
+        screen.material.SetInt ("displayMask", 1);
     }
 
     void CreateViewTexture()
@@ -48,14 +50,9 @@ public class Portal : MonoBehaviour
     }
 
     // Called just before the player camera is rendered
-    public void BeforeRender(ScriptableRenderContext renderContext, Camera cam)
+    public void Render(ScriptableRenderContext renderContext, Camera[] cams)
     {
-        // TODO There should really be a better way to hook into a single camera's rendering loop?
-        if (cam != portalCam)
-        {
-            return;
-        }
-
+        // TODO handle initialization via some sort of action delegate
         if (!playerCam)
         {
             if (!Camera.main)
@@ -64,10 +61,14 @@ public class Portal : MonoBehaviour
             }
             playerCam = Camera.main;
         }
+        
+        CreateViewTexture();
+        
         // hide screen object blocking our view
-        screen.enabled = false;
-
-        // CreateViewTexture();
+        // screen.enabled = false;
+        // Why is it casting shadows? Is this just a clever way to make the object invisible??
+        screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        linkedPortal.screen.material.SetInt("displayMask", 0);
 
         // Make portal cam position and rotation the same relative to this portal as player cam is to the linked portal
         portalCam.projectionMatrix = playerCam.projectionMatrix;
@@ -75,17 +76,10 @@ public class Portal : MonoBehaviour
         portalCam.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
 
         // Render to the camera (to the view texture, which is the linked target texture)
-        // portalCam.Render();
-
+        UniversalRenderPipeline.RenderSingleCamera(renderContext, portalCam);
+        
+        linkedPortal.screen.material.SetInt("displayMask", 1);
+        screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
     }
 
-    public void AfterRender(ScriptableRenderContext renderContext, Camera cam)
-    {
-        if (cam != portalCam)
-        {
-            return;
-        }
-        screen.enabled = true;
-    }
-    
 }

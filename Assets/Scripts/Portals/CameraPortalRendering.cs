@@ -16,8 +16,8 @@ public class CameraPortalRendering : MonoBehaviour
         portals = FindObjectsOfType<Portal>();
         foreach (var portal in portals)
         {
-            RenderPipelineManager.beginCameraRendering += portal.BeforeRender;
-            RenderPipelineManager.endCameraRendering += portal.AfterRender;
+            RenderPipelineManager.beginFrameRendering += portal.Render;
+            // RenderPipelineManager.endCameraRendering += portal.AfterRender;
         }
     }
 
@@ -25,8 +25,8 @@ public class CameraPortalRendering : MonoBehaviour
     {
         foreach (var portal in portals)
         {
-            RenderPipelineManager.beginCameraRendering -= portal.BeforeRender;
-            RenderPipelineManager.endCameraRendering -= portal.AfterRender;
+            RenderPipelineManager.beginFrameRendering -= portal.Render;
+            // RenderPipelineManager.endCameraRendering -= portal.AfterRender;
         }
     }
 
