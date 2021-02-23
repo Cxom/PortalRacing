@@ -13,6 +13,7 @@ namespace Units
     public class PlayerMotor : NetworkBehaviour
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
+        [SerializeField] float moveForce = 3000f;
 
         public Color color;
         
@@ -42,7 +43,7 @@ namespace Units
             float forward = Input.GetAxisRaw("Vertical");
             float rotation = Input.GetAxisRaw("Horizontal");
 
-            Vector3 next = new Vector3(0f, 0f, forward * Time.deltaTime * 3000);
+            Vector3 next = new Vector3(0f, 0f, forward * Time.deltaTime * moveForce);
             next += Physics.gravity * Time.deltaTime;
 
             transform.Rotate(new Vector3(0f, rotation * Time.deltaTime * 90, 0f));
