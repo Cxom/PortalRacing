@@ -127,6 +127,7 @@ public class Portal : MonoBehaviour
         portalCam.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
 
         // Render to the camera (to the view texture, which is the linked target texture)
+        SetPortalCameraNearClipPlane();
         UniversalRenderPipeline.RenderSingleCamera(renderContext, portalCam);
         
         // screen.enabled = true;
@@ -209,6 +210,23 @@ public class Portal : MonoBehaviour
         screenTransform.localPosition = Vector3.forward * screenThickness * ((camFacingSameDirAsPortal) ? 0.5f : -0.5f);
         
         return screenThickness;
+    }
+    
+    // Use custom projection matrix to align the portal camera's near clip plane to the surface of the portal
+    // www.terathon.com/lengyel/Lengyel-Oblique.pdf
+    void SetPortalCameraNearClipPlane()
+    {
+        Transform clipPlane = transform;
+        int dot = Math.Sign(Vector3.Dot(clipPlane.forward, clipPlane.position - portalCam.transform.position));
+
+        Vector3 camSpacePos = portalCam.worldToCameraMatrix.MultiplyPoint(clipPlane.position);
+        Vector3 camSpaceNormal = portalCam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
+        float camSpaceDistance = -Vector3.Dot(camSpacePos, camSpaceNormal);
+        Vector4 clipPlaneCameraSpace = new Vector4(camSpaceNormal.x, camSpaceNormal.y, camSpaceNormal.z, camSpaceDistance);
+        
+        // Update the projection based on the new clip plane
+        // Calculate the projection matrix with the player camera so that the player camera settings are used
+        portalCam.projectionMatrix = playerCam.CalculateObliqueMatrix(clipPlaneCameraSpace);
     }
     
 }
