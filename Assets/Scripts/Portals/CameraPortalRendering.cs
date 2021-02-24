@@ -14,30 +14,24 @@ public class CameraPortalRendering : MonoBehaviour
     {
         // something about portals idek
         portals = FindObjectsOfType<Portal>();
-        foreach (var portal in portals)
-        {
-            RenderPipelineManager.beginFrameRendering += portal.Render;
-            // RenderPipelineManager.endCameraRendering += portal.AfterRender;
-        }
+        RenderPipelineManager.beginFrameRendering += DoPortalRendering;
     }
 
     void OnDestroy()
     {
-        foreach (var portal in portals)
-        {
-            RenderPipelineManager.beginFrameRendering -= portal.Render;
-            // RenderPipelineManager.endCameraRendering -= portal.AfterRender;
-        }
+        RenderPipelineManager.beginFrameRendering -= DoPortalRendering;
     }
 
-    // void OnPreCull()
-    // {
-    //     // Debug.Log("OnPreCull");
-    //     // portal rendering stuff
-    //     foreach (var portal in portals)
-    //     {
-    //         portal.Render();
-    //     }
-    // }
+    void DoPortalRendering(ScriptableRenderContext renderContext, Camera[] cams)
+    {
+        foreach (var portal in portals)
+        {
+            portal.Render(renderContext, cams);
+        }
+        foreach (var portal in portals)
+        {
+            portal.PostPortalRender();
+        }
+    }
     
 }

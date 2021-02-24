@@ -37,7 +37,10 @@ public class Portal : MonoBehaviour
         screen.material.SetInt ("displayMask", 1);
     }
 
-    void FixedUpdate()
+    // Note that there is a choice here to teleport not in the physics loop. Primarily graphical (and uniformly applied to any portalTraveller)
+    // so should be fine (I think). Main consequence is less deterministic physics since multiple travellers are teleported dependent on framerate
+    // One idea to investigate later is temporarily separating the player camera from the player physics object
+    void LateUpdate()
     {
         for (int i = 0; i < trackedTravellers.Count; ++i)
         {
@@ -68,16 +71,21 @@ public class Portal : MonoBehaviour
             {
                 // Debug.DrawRay(transform.position, previousOffsetFromPortal, Color.yellow, 3);
                 // Debug.DrawRay(transform.position, offsetFromPortal*1.5f, Color.green, 3);
-
-                var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix *
-                        travellerTransform.localToWorldMatrix;
+                
+                // TODO figure out math to align portal normals (so they're symmetric) in a less retarded way (don't rotate the linked portal temporarily, actually figure out the linalg...)
+                // Also note that as long as portals are set up to work from both sides (a distinction only made in terms of graphical affordances)
+                // it technically doesn't matter, it's just cleaner from the perspective of the editor
+                // linkedPortal.transform.Rotate(linkedPortal.transform.up, 180);
+                var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
                 traveller.Teleport(transform, linkedPortal.transform, m.GetColumn(3), m.rotation);
+                // linkedPortal.transform.Rotate(linkedPortal.transform.up, -180);
 
                 // Can't rely on OnTriggerEnter/Exit to be called next frame because it depends on the physics loop, not the update loop
                 // This results in the portal teleporting twice or more by unpredictably screwing with the portal side calculations (I think)
                 linkedPortal.OnTravellerEnterPortal(traveller);
                 trackedTravellers.RemoveAt(i);
                 --i;
+
             }
         }
     }
@@ -112,7 +120,10 @@ public class Portal : MonoBehaviour
 
         // Make portal cam position and rotation the same relative to this portal as player cam is to the linked portal
         portalCam.projectionMatrix = playerCam.projectionMatrix;
+        // TODO figure out math to align portal normals (so they're symmetric) in a less retarded way (don't rotate the linked portal temporarily, actually figure out the linalg...)
+        // linkedPortal.transform.Rotate(linkedPortal.transform.up, 180);
         var m = transform.localToWorldMatrix * linkedPortal.transform.worldToLocalMatrix * playerCam.transform.localToWorldMatrix;
+        // linkedPortal.transform.Rotate(linkedPortal.transform.up, -180);
         portalCam.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
 
         // Render to the camera (to the view texture, which is the linked target texture)
@@ -173,6 +184,31 @@ public class Portal : MonoBehaviour
             traveller.ExitPortalThreshold();
             trackedTravellers.Remove(traveller);
         }
+    }
+
+    // Called once all portals have been rendered, but before the player camera renders
+    public void PostPortalRender()
+    {
+        if (!playerCam) return;
+        ProtectScreenFromClipping(playerCam.transform.position);
+    }
+    
+    // Sets the thickness of the portal screen so as not to clip with the camera near plane when the player goes through
+    // This is less brittle if set up for SINGLE-DIRECTION portals (it is currently still dual-direction) - if doing so
+    // the portal logic will still allow going through from the back face, but it will graphically clip to do so.
+    float ProtectScreenFromClipping(Vector3 viewPoint)
+    {
+        float halfHeight = playerCam.nearClipPlane * Mathf.Tan(playerCam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+        float halfWidth = halfHeight * playerCam.aspect;
+        float dstToNearClipPlaneCorner = new Vector3(halfWidth, halfHeight, playerCam.nearClipPlane).magnitude;
+        float screenThickness = dstToNearClipPlaneCorner;
+
+        Transform screenTransform = screen.transform;
+        bool camFacingSameDirAsPortal = Vector3.Dot(transform.forward, transform.position - viewPoint) > 0;
+        screenTransform.localScale = new Vector3(screenTransform.localScale.x, screenTransform.localScale.y, screenThickness);
+        screenTransform.localPosition = Vector3.forward * screenThickness * ((camFacingSameDirAsPortal) ? 0.5f : -0.5f);
+        
+        return screenThickness;
     }
     
 }
