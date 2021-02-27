@@ -4,9 +4,14 @@ using UnityEngine;
 
 public class PortalGun : MonoBehaviour
 {
+    
 
+    [Header("Portal Gun")]
     [SerializeField] float range = 100f;
     [SerializeField] float beamSpeed = 100f;
+    [SerializeField] public Color primaryColor;
+    [SerializeField] public Color secondaryColor;
+    public Color SecondaryColor { get; private set; }
     
     [SerializeField] Transform orientation;
     [SerializeField] Transform shootOrigin;
@@ -44,7 +49,7 @@ public class PortalGun : MonoBehaviour
             if (portalable == null) return;
 
             Portal replacedPortal;
-            Portal placedPortal = portalable.PlacePortal(primary, out replacedPortal);
+            Portal placedPortal = portalable.PlacePortal(this, primary, out replacedPortal);
 
             if (replacedPortal)
             {

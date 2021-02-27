@@ -10,7 +10,7 @@ public class PortalPanel : MonoBehaviour, IPortalable
     [SerializeField] Portal portal;
     [SerializeField] GameObject panel;
 
-    public Portal PlacePortal(bool primary, out Portal replacedPortal)
+    public Portal PlacePortal(PortalGun portalGun, bool primary, out Portal replacedPortal)
     {
         replacedPortal = null;
         if (active)
@@ -21,7 +21,7 @@ public class PortalPanel : MonoBehaviour, IPortalable
         
         active = true;
         this.primary = primary;
-        UpdatePortalState();
+        UpdatePortalState(portalGun);
 
         return portal;
     }
@@ -35,21 +35,28 @@ public class PortalPanel : MonoBehaviour, IPortalable
             portal.linkedPortal.linkedPortal = null;
         }
         portal.linkedPortal = null;
-        UpdatePortalState();
+        UpdatePortalState(null);
     }
 
-    void UpdatePortalState()
+    void UpdatePortalState(PortalGun portalGun)
     {
         if (active)
         {
             CameraPortalRendering.AddPortal(portal);
+            // TODO This may need to be setting materials, not colors, so we can have different patterns for different players for increased accessibility
+            portal.PortalBorder.materials[0].color = primary ? portalGun.primaryColor : portalGun.secondaryColor;
+            portal.PortalBorder.materials[0].EnableKeyword("_EMISSION");
+            portal.PortalBorder.materials[0].SetColor("_EmissionColor", primary ? portalGun.primaryColor : portalGun.secondaryColor);
         }
         else
         {
             CameraPortalRendering.RemovePortal(portal);
+            portal.PortalBorder.materials[0].color = Color.white;
+            portal.PortalBorder.materials[0].SetColor("_EmissionColor", Color.black);
         }
         portal.transform.localRotation = Quaternion.Euler(0, active && !primary ? 180 : 0, 0);
         portal.gameObject.SetActive(active);
+        portal.PortalBorder.gameObject.SetActive(active);
         panel.SetActive(!active);
     }
 

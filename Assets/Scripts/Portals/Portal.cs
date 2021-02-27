@@ -14,6 +14,7 @@ public class Portal : MonoBehaviour
     public Portal linkedPortal;
     public MeshRenderer screen;
     public int recursionLimit = 5;
+    public Renderer PortalBorder;
     public Collider screenCollider;
     
     [Header("Advanced Settings")] 

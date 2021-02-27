@@ -296,7 +296,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09bcc43b12ce9e74b9ecb35b1239da67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentUpdateStepPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &8530750869530783669
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -311,6 +310,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   range: 200
   beamSpeed: 10
+  primaryColor: {r: 0.9843137, g: 0.78431374, b: 0, a: 0}
+  secondaryColor: {r: 1, g: 0.25882354, b: 0.30980393, a: 0}
   orientation: {fileID: 2372971139260643345}
   shootOrigin: {fileID: 2372971139260643345}
   collisionMask:
@@ -318,8 +319,6 @@ MonoBehaviour:
     m_Bits: 65
   primaryIndicator: {fileID: 8337930255050647255}
   secondaryIndicator: {fileID: 8298787776979402036}
-  hitNormalGraphic: {fileID: 244543042843322550, guid: 153c7c232a74de14ea03a745ed234f37, type: 3}
-  hitNormalGraphicDisplaySeconds: 2
   portalBeamMaterial: {fileID: 2100000, guid: 87fc44f78d5cffc40a785d30f778b08a, type: 2}
 --- !u!1 &6274285527478553859
 GameObject:
