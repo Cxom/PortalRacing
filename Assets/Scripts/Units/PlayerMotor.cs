@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace Units
 {
+    
 
     /// <summary>
     /// A dummy super simple movement class for testing/implementing multiplayer code
@@ -14,8 +15,12 @@ namespace Units
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
         [SerializeField] float moveForce = 3000f;
-
-        public Color color;
+        
+        [SerializeField] float _yawRate = 300f;
+        [SerializeField] float _pitchRate = 300f;
+        [SerializeField] Transform cameraOrientation;
+        
+        float pitch;
         
         Rigidbody _rigidbody;
 
@@ -27,7 +32,12 @@ namespace Units
         public override void OnStartClient()
         {
             base.OnStartClient();
-            // playerInputSystem.enabled = base.hasAuthority;
+            if (base.hasAuthority)
+            {
+                // playerInputSystem.enabled = base.hasAuthority;
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         void FixedUpdate()
@@ -41,16 +51,32 @@ namespace Units
         void Move()
         {
             float forward = Input.GetAxisRaw("Vertical");
-            float rotation = Input.GetAxisRaw("Horizontal");
-            float lateral = (Input.GetKey(KeyCode.C) ? 1f : 0) - (Input.GetKey(KeyCode.Z) ? 1f : 0);
+            float lateral = Input.GetAxisRaw("Horizontal");
 
             Vector3 next = new Vector3(lateral, 0f, forward) * (Time.deltaTime * moveForce);
             next += Physics.gravity * Time.deltaTime;
 
-            transform.Rotate(new Vector3(0f, rotation * Time.deltaTime * 90, 0f));
             _rigidbody.AddForce(transform.TransformDirection(next));
         }
 
+        void LateUpdate()
+        {
+            float mouseX = Input.GetAxis("Mouse X") * Time.fixedDeltaTime * _yawRate;
+            float mouseY = Input.GetAxis("Mouse Y") * Time.deltaTime * _pitchRate;
+        
+            // Find the current rotation
+            Vector3 rotation = transform.eulerAngles;
+            float yaw = rotation.y + mouseX;
+        
+            // Rotate and clamp angles
+            pitch -= mouseY;
+            pitch = Mathf.Clamp(pitch, -90f, 90f);
+        
+            // Perform rotations
+            cameraOrientation.localRotation = Quaternion.Euler(pitch, 0, 0);
+            transform.localRotation = Quaternion.Euler(0, yaw, 0);
+        }
+        
         void OnGUI()
         {
             GUI.Label(new Rect(20, 25, 200, 20), $"Velocity: {_rigidbody.velocity.magnitude}");

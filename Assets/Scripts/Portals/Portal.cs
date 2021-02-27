@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -23,13 +21,14 @@ public class Portal : MonoBehaviour
     public float nearClipLimit = 0.2f;
     
     // Private variables
-    Camera portalCam;
+    public Camera portalCam;
     public Camera playerCam;
     List<PortalTraveller> trackedTravellers;
     RenderTexture viewTexture;
 
-    void Awake()
+    void OnEnable()
     {
+        // TODO proper handling of cameras for portals through events
         playerCam = Camera.main;
         portalCam = GetComponentInChildren<Camera>();
         portalCam.enabled = false; // We want to manually control this camera
@@ -37,26 +36,41 @@ public class Portal : MonoBehaviour
         screen.material.SetInt ("displayMask", 1);
     }
 
+    // void FixedUpdate()
+    // {
+    //     foreach (var traveller in trackedTravellers)
+    //     {
+    //         Debug.DrawRay(traveller.transform.position, traveller.transform.up, Color.white, 3);
+    //     }
+    // }
+
     // Note that there is a choice here to teleport not in the physics loop. Primarily graphical (and uniformly applied to any portalTraveller)
     // so should be fine (I think). Main consequence is less deterministic physics since multiple travellers are teleported dependent on framerate
     // One idea to investigate later is temporarily separating the player camera from the player physics object
     void LateUpdate()
     {
+        if (!linkedPortal) return;
+        
         for (int i = 0; i < trackedTravellers.Count; ++i)
         {
             PortalTraveller traveller = trackedTravellers[i];
             Transform travellerTransform = traveller.transform;
-            Vector3 offsetFromPortal = traveller.transform.position - transform.position;
-            Vector3 previousOffsetFromPortal = traveller.previousPhysicsStepPosition - transform.position;
-
-            var stepRay = new Ray(traveller.previousPhysicsStepPosition, traveller.transform.position - traveller.previousPhysicsStepPosition);
+            Vector3 offsetFromPortal = traveller.currentUpdateStepPosition - transform.position;
+            Vector3 previousOffsetFromPortal = traveller.previousUpdateStepPosition - transform.position;
             
-            // Debug.DrawRay(stepRay.origin, stepRay.direction, new Color(1f, .5f, 0f), 3);
-            // Debug.DrawRay(transform.position, offsetFromPortal*.5f, Color.blue, 3);
+            var stepRay = new Ray(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition - traveller.previousUpdateStepPosition);
             
-            if ( !screenCollider.bounds.IntersectRay(stepRay))
+            // Debug.DrawRay(traveller.transform.position, traveller.transform.up, Color.black, 3);
+            // Debug.DrawLine(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition, new Color(1f, .5f, 0f), 4);
+            // Debug.DrawRay(transform.position, offsetFromPortal*.5f, Color.blue, 4);
+            
+            if ( !screenCollider.bounds.IntersectRay(stepRay, out float distance))
             {
-                return;
+                continue;
+            }
+            if (distance > Vector3.Distance(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition))
+            {
+                continue;
             }
             
             int portalSidePrevious = Math.Sign(Vector3.Dot(previousOffsetFromPortal, transform.forward));
@@ -69,8 +83,8 @@ public class Portal : MonoBehaviour
             // Teleport the traveller if it has crossed from one side of the portal to the other
             if (portalSide != portalSidePrevious)
             {
-                // Debug.DrawRay(transform.position, previousOffsetFromPortal, Color.yellow, 3);
-                // Debug.DrawRay(transform.position, offsetFromPortal*1.5f, Color.green, 3);
+                // Debug.DrawRay(transform.position, previousOffsetFromPortal, Color.yellow, 4);
+                // Debug.DrawRay(transform.position, offsetFromPortal*1.5f, Color.green, 4);
                 
                 // TODO figure out math to align portal normals (so they're symmetric) in a less retarded way (don't rotate the linked portal temporarily, actually figure out the linalg...)
                 // Also note that as long as portals are set up to work from both sides (a distinction only made in terms of graphical affordances)
@@ -85,7 +99,6 @@ public class Portal : MonoBehaviour
                 linkedPortal.OnTravellerEnterPortal(traveller);
                 trackedTravellers.RemoveAt(i);
                 --i;
-
             }
         }
     }
@@ -102,6 +115,8 @@ public class Portal : MonoBehaviour
             }
             playerCam = Camera.main;
         }
+
+        if (!linkedPortal) return;
         
         // TODO This check may need to be updated with more cameras that can see portals
         if (!VisibleFromCamera(linkedPortal.screen, playerCam))
@@ -115,7 +130,7 @@ public class Portal : MonoBehaviour
         // Why is it casting shadows? Is this just a clever way to make the object invisible??
         // TODO figure out the portal shadow situation and desired behaviour and correct it
         // screen.enabled = false;
-        screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        screen.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
         linkedPortal.screen.material.SetInt("displayMask", 0);
 
         // Make portal cam position and rotation the same relative to this portal as player cam is to the linked portal
@@ -132,7 +147,7 @@ public class Portal : MonoBehaviour
         
         // screen.enabled = true;
         linkedPortal.screen.material.SetInt("displayMask", 1);
-        screen.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        screen.shadowCastingMode = ShadowCastingMode.On;
     }
 
     static bool VisibleFromCamera(Renderer renderer, Camera camera) {
@@ -170,8 +185,6 @@ public class Portal : MonoBehaviour
     {
         if (!trackedTravellers.Contains(traveller))
         {
-            // Debug.DrawRay(transform.position, traveller.transform.position - transform.position, Color.magenta, 3);
-            
             traveller.EnterPortalThreshold();
             trackedTravellers.Add(traveller);
         }
@@ -190,7 +203,7 @@ public class Portal : MonoBehaviour
     // Called once all portals have been rendered, but before the player camera renders
     public void PostPortalRender()
     {
-        if (!playerCam) return;
+        if (!playerCam || !linkedPortal) return;
         ProtectScreenFromClipping(playerCam.transform.position);
     }
     
@@ -223,7 +236,8 @@ public class Portal : MonoBehaviour
         Vector3 camSpaceNormal = portalCam.worldToCameraMatrix.MultiplyVector(clipPlane.forward) * dot;
         float camSpaceDistance = -Vector3.Dot(camSpacePos, camSpaceNormal);
         Vector4 clipPlaneCameraSpace = new Vector4(camSpaceNormal.x, camSpaceNormal.y, camSpaceNormal.z, camSpaceDistance);
-        
+
+        Debug.Log($"{transform.parent.name}-{name} {clipPlaneCameraSpace}");
         // Update the projection based on the new clip plane
         // Calculate the projection matrix with the player camera so that the player camera settings are used
         portalCam.projectionMatrix = playerCam.CalculateObliqueMatrix(clipPlaneCameraSpace);

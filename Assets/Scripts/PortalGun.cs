@@ -12,18 +12,15 @@ public class PortalGun : MonoBehaviour
     [SerializeField] Transform shootOrigin;
     [SerializeField] LayerMask collisionMask;
 
-    bool primaryActive = false;
-    bool secondaryActive = false;
-    
     [Header("Graphics - UI")]
     [SerializeField] GameObject primaryIndicator;
     [SerializeField] GameObject secondaryIndicator;
     
     [Header("Graphics - Scene")]
-    [SerializeField] GameObject hitNormalGraphic;
-    [SerializeField] float hitNormalGraphicDisplaySeconds = 2;
     [SerializeField] Material portalBeamMaterial;
 
+    IPortalable primaryPortal;
+    IPortalable secondaryPortal;
 
     void Update()
     {
@@ -43,27 +40,57 @@ public class PortalGun : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(orientation.position, orientation.forward, out hit, range, collisionMask))
         {
-            Debug.Log(hit.transform.name);
+            IPortalable portalable = hit.collider.GetComponentInParent<IPortalable>();
+            if (portalable == null) return;
+
+            Portal replacedPortal;
+            Portal placedPortal = portalable.PlacePortal(primary, out replacedPortal);
+
+            if (replacedPortal)
+            {
+                // Don't disable the other portal I think the IPortalable should handle that
+                // TODO solve portal lifetime. Basically we have a portalable, which could have dynamic or static portal lifetimes
+                // But we also need some conceptualization of if one portal replaces another
+                // This is probably best done with links between from the portal to the gun,
+                // but nevertheless it needs planned and solved once and properly
+                if (primaryPortal != null && replacedPortal == primaryPortal.GetPortal())
+                {
+                    primaryPortal = null;
+                } 
+                else if (secondaryPortal != null && replacedPortal == secondaryPortal.GetPortal())
+                {
+                    secondaryPortal = null;
+                }
+            }
+            
             if (primary)
             {
-                primaryActive = !primaryActive;
-                primaryIndicator.SetActive(primaryActive);
+                if (primaryPortal != null)
+                {
+                    primaryPortal.RemovePortal();
+                    primaryPortal = null;
+                }
+                primaryPortal = portalable;
             }
             else
             {
-                secondaryActive = !secondaryActive;
-                secondaryIndicator.SetActive(secondaryActive);
+                if (secondaryPortal != null)
+                {
+                    secondaryPortal.RemovePortal();
+                    secondaryPortal = null;
+                }
+                secondaryPortal = portalable;
             }
+            
+            primaryIndicator.SetActive(primaryPortal != null);
+            secondaryIndicator.SetActive(secondaryPortal != null);
 
-            StartCoroutine(DisplayHitGraphic(hit));
+            if (primaryPortal != null && secondaryPortal != null)
+            {
+                primaryPortal.GetPortal().linkedPortal = secondaryPortal.GetPortal();
+                secondaryPortal.GetPortal().linkedPortal = primaryPortal.GetPortal();
+            }
         }
     }
 
-    IEnumerator DisplayHitGraphic(RaycastHit hit)
-    {
-        var hitGraphic = Instantiate(hitNormalGraphic, hit.point + (hit.normal * 0.05f), Quaternion.LookRotation(-hit.normal));
-        yield return new WaitForSeconds(hitNormalGraphicDisplaySeconds);
-        Destroy(hitGraphic);
-    }
-    
 }

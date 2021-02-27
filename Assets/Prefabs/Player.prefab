@@ -281,7 +281,9 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0.1
   moveForce: 3000
-  color: {r: 0, g: 0, b: 0, a: 0}
+  _yawRate: 300
+  _pitchRate: 300
+  cameraOrientation: {fileID: 2372971139260643345}
 --- !u!114 &6782873654964769849
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -294,6 +296,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09bcc43b12ce9e74b9ecb35b1239da67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentUpdateStepPosition: {x: 0, y: 0, z: 0}
 --- !u!114 &8530750869530783669
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -306,7 +309,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb714c33f6f751e4ebfd9e35b17b064a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  range: 100
+  range: 200
   beamSpeed: 10
   orientation: {fileID: 2372971139260643345}
   shootOrigin: {fileID: 2372971139260643345}
