@@ -28,7 +28,7 @@ public class PortalTraveller : MonoBehaviour
     public virtual void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot)
     {
         // Debug.Log($"TELEPORTING {name}: {pos} -> {rot}");
-        Debug.DrawRay(transform.position, pos - transform.position, Color.red, 4);
+        // Debug.DrawRay(transform.position, pos - transform.position, Color.red, 4);
         transform.position = pos;
         currentPhysicsStepPosition = pos;
         previousPhysicsStepPosition = pos;
