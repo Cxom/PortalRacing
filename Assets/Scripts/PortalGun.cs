@@ -92,8 +92,8 @@ public class PortalGun : MonoBehaviour
 
             if (primaryPortal != null && secondaryPortal != null)
             {
-                primaryPortal.GetPortal().linkedPortal = secondaryPortal.GetPortal();
-                secondaryPortal.GetPortal().linkedPortal = primaryPortal.GetPortal();
+                primaryPortal.GetPortal().LinkedPortal = secondaryPortal.GetPortal();
+                secondaryPortal.GetPortal().LinkedPortal = primaryPortal.GetPortal();
             }
         }
     }

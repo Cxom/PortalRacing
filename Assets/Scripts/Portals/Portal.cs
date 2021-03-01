@@ -9,13 +9,28 @@ using UnityEngine.Rendering.Universal;
 public class Portal : MonoBehaviour
 {
     // TODO fix access modifiers
-    
+
     [Header("Main Settings")] 
-    public Portal linkedPortal;
+    Portal linkedPortal;
+    public Portal LinkedPortal {
+        get
+        {
+            return linkedPortal;
+        }
+        
+        set
+        {
+            linkedPortal = value;
+            UpdatePortalActiveState();
+        } 
+    }
+    
     public MeshRenderer screen;
     public int recursionLimit = 5;
     public Renderer PortalBorder;
     public Collider screenCollider;
+    public Material portalMaterial;
+    public Material unlinkedMaterial;
     
     [Header("Advanced Settings")] 
     public float nearClipOffset = 0.05f;
@@ -34,7 +49,22 @@ public class Portal : MonoBehaviour
         portalCam = GetComponentInChildren<Camera>();
         portalCam.enabled = false; // We want to manually control this camera
         trackedTravellers = new List<PortalTraveller>();
-        screen.material.SetInt ("displayMask", 1);
+        UpdatePortalActiveState();
+    }
+    
+    void UpdatePortalActiveState()
+    {
+        if (linkedPortal)
+        {
+            screen.material = portalMaterial;
+            screen.material.SetInt ("displayMask", 1);
+            screenCollider.isTrigger = true;
+        }
+        else
+        {
+            screen.material = unlinkedMaterial;
+            screenCollider.isTrigger = false;
+        }
     }
 
     // void FixedUpdate()
@@ -116,7 +146,7 @@ public class Portal : MonoBehaviour
             }
             playerCam = Camera.main;
         }
-
+        
         if (!linkedPortal) return;
         
         // TODO This check may need to be updated with more cameras that can see portals

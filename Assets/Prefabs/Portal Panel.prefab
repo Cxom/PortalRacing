@@ -241,6 +241,8 @@ MonoBehaviour:
   recursionLimit: 5
   PortalBorder: {fileID: 8288781615952081970}
   screenCollider: {fileID: 2174201394623892911}
+  portalMaterial: {fileID: 2100000, guid: 605d3ff5e81991d46800104d70b1cee0, type: 2}
+  unlinkedMaterial: {fileID: 2100000, guid: 760af847d7d82fe47b02d029f1552d5c, type: 2}
   nearClipOffset: 0.05
   nearClipLimit: 0.2
   portalCam: {fileID: 0}
@@ -298,7 +300,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5867503095699162741}
-  m_Mesh: {fileID: -1875780437015597444, guid: f41802e248f2e42178e949a42908c5b4, type: 3}
+  m_Mesh: {fileID: -1875780437015597444, guid: f9c49281f564c244db30d66b288bfb00, type: 3}
 --- !u!23 &1850083457824457113
 MeshRenderer:
   m_ObjectHideFlags: 0

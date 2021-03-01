@@ -30,11 +30,11 @@ public class PortalPanel : MonoBehaviour, IPortalable
     {
         active = false;
         // TODO all this portal enabling/disabling WHERE A PORTAL STILL EXISTS, JUST UNPAIRED WITH ANOTHER should happen inside the portal class
-        if (portal.linkedPortal)
+        if (portal.LinkedPortal)
         {
-            portal.linkedPortal.linkedPortal = null;
+            portal.LinkedPortal.LinkedPortal = null;
         }
-        portal.linkedPortal = null;
+        portal.LinkedPortal = null;
         UpdatePortalState(null);
     }
 
