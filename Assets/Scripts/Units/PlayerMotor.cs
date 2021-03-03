@@ -61,6 +61,14 @@ namespace Units
 
         void LateUpdate()
         {
+            if (base.hasAuthority)
+            {
+                MoveCamera();
+            }
+        }
+
+        void MoveCamera()
+        {
             float mouseX = Input.GetAxis("Mouse X") * Time.fixedDeltaTime * _yawRate;
             float mouseY = Input.GetAxis("Mouse Y") * Time.deltaTime * _pitchRate;
         

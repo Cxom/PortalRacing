@@ -7,7 +7,6 @@ namespace Client
 
     public class ClientInstance : NetworkBehaviour
     {
-
         public static ClientInstance Instance;
 
         // public static Action<GameObject> OnOwnerCharacterSpawned;
