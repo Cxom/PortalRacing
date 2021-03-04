@@ -128,7 +128,6 @@ public class Portal : MonoBehaviour
                 // Can't rely on OnTriggerEnter/Exit to be called next frame because it depends on the physics loop, not the update loop
                 // This results in the portal teleporting twice or more by unpredictably screwing with the portal side calculations (I think)
                 linkedPortal.OnTravellerEnterPortal(traveller);
-                trackedTravellers.RemoveAt(i);
                 --i;
             }
         }
@@ -268,7 +267,7 @@ public class Portal : MonoBehaviour
         float camSpaceDistance = -Vector3.Dot(camSpacePos, camSpaceNormal);
         Vector4 clipPlaneCameraSpace = new Vector4(camSpaceNormal.x, camSpaceNormal.y, camSpaceNormal.z, camSpaceDistance);
 
-        Debug.Log($"{transform.parent.name}-{name} {clipPlaneCameraSpace}");
+        // Debug.Log($"{transform.parent.name}-{name} {clipPlaneCameraSpace}");
         // Update the projection based on the new clip plane
         // Calculate the projection matrix with the player camera so that the player camera settings are used
         portalCam.projectionMatrix = playerCam.CalculateObliqueMatrix(clipPlaneCameraSpace);
