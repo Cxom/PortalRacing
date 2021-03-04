@@ -180,7 +180,7 @@ MonoBehaviour:
   maxTension: 0.8
   minTension: 0.25
   spring: 4.5
-  damper: 7
+  damper: 1
   massScale: 4.5
 --- !u!1 &1998089727439114939
 GameObject:
