@@ -296,6 +296,7 @@ GameObject:
   - component: {fileID: 2531503120305884221}
   - component: {fileID: 6782873654964769849}
   - component: {fileID: 8530750869530783669}
+  - component: {fileID: -2640255933992771247}
   m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
@@ -502,6 +503,18 @@ MonoBehaviour:
   primaryIndicator: {fileID: 8337930255050647255}
   secondaryIndicator: {fileID: 8298787776979402036}
   portalBeamMaterial: {fileID: 2100000, guid: 87fc44f78d5cffc40a785d30f778b08a, type: 2}
+--- !u!114 &-2640255933992771247
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2740831410132774777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49060d6f503c5774c8867eed8aba1bba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6274285527478553859
 GameObject:
   m_ObjectHideFlags: 0
