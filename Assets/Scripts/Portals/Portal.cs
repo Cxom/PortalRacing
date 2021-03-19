@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Portals;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -95,6 +96,11 @@ public class Portal : MonoBehaviour
             // Debug.DrawLine(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition, new Color(1f, .5f, 0f), 4);
             // Debug.DrawRay(transform.position, offsetFromPortal*.5f, Color.blue, 4);
             
+            // TODO placement in this code for handling screen-intersection detection
+            var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
+            traveller.graphicsClone.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
+            Debug.Log($"{traveller.graphicsClone.name} {transform.position} ({transform.eulerAngles})");
+            
             if ( !screenCollider.bounds.IntersectRay(stepRay, out float distance))
             {
                 continue;
@@ -121,7 +127,6 @@ public class Portal : MonoBehaviour
                 // Also note that as long as portals are set up to work from both sides (a distinction only made in terms of graphical affordances)
                 // it technically doesn't matter, it's just cleaner from the perspective of the editor
                 // linkedPortal.transform.Rotate(linkedPortal.transform.up, 180);
-                var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
                 traveller.Teleport(transform, linkedPortal.transform, m.GetColumn(3), m.rotation);
                 // linkedPortal.transform.Rotate(linkedPortal.transform.up, -180);
 
@@ -271,6 +276,36 @@ public class Portal : MonoBehaviour
         // Update the projection based on the new clip plane
         // Calculate the projection matrix with the player camera so that the player camera settings are used
         portalCam.projectionMatrix = playerCam.CalculateObliqueMatrix(clipPlaneCameraSpace);
+    }
+
+    // I don't like that the reset of the position happens in PortalTraveller but we're updating it here
+    // Seems like failure to encapsulate
+    // TODO investigate refactoring
+    void UpdateSliceParams(PortalTraveller traveller)
+    {
+        // Calculate the slice normal
+        int side = SideOfPortal(traveller.transform.position);
+        Vector3 sliceNormal = transform.forward * -side;
+        Vector3 cloneSliceNormal = linkedPortal.transform.forward * side;
+        
+        // Calculate the slice center
+        Vector3 slicePosition = transform.position;
+        Vector3 cloneSlicePosition = linkedPortal.transform.position;
+        
+        // Apply parameters
+        for (int i = 0; i < traveller.originalMaterials.Length; ++i)
+        {
+            traveller.originalMaterials[i].SetVector("sliceCenter", slicePosition);
+            traveller.originalMaterials[i].SetVector("sliceNormal", sliceNormal);
+
+            traveller.cloneMaterials[i].SetVector("sliceCenter", cloneSlicePosition);
+            traveller.cloneMaterials[i].SetVector("sliceNormal", cloneSliceNormal);
+        }
+    }
+
+    int SideOfPortal(Vector3 position)
+    {
+        return Math.Sign(Vector3.Dot(position - transform.position, transform.forward));
     }
     
 }

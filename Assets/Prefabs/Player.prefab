@@ -479,6 +479,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09bcc43b12ce9e74b9ecb35b1239da67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  graphicsObject: {fileID: 2740831410132774777, guid: 63d4e4bf07ae45b4fae4977e249981ff, type: 3}
+  originalMaterials: []
+  cloneMaterials: []
 --- !u!114 &8530750869530783669
 MonoBehaviour:
   m_ObjectHideFlags: 0
