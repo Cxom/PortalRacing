@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Mirror;
 using UnityEngine;
 
 namespace Units
@@ -11,7 +10,7 @@ namespace Units
     /// <summary>
     /// A dummy super simple movement class for testing/implementing multiplayer code
     /// </summary>
-    public class PlayerMotor : NetworkBehaviour
+    public class PlayerMotor : MonoBehaviour
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
         [SerializeField] float moveForce = 3000f;
@@ -29,23 +28,33 @@ namespace Units
             _rigidbody = GetComponent<Rigidbody>();
         }
 
-        public override void OnStartClient()
+        // public override void OnStartClient()
+        // {
+        //     base.OnStartClient();
+        //     if (base.hasAuthority)
+        //     {
+        //         // playerInputSystem.enabled = base.hasAuthority;
+        //         CaptureCursor();
+        //     }
+        // }
+
+        void OnEnable()
         {
-            base.OnStartClient();
-            if (base.hasAuthority)
-            {
-                // playerInputSystem.enabled = base.hasAuthority;
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
+            CaptureCursor();
+        }
+
+        static void CaptureCursor()
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
         void FixedUpdate()
         {
-            if (base.hasAuthority)
-            {
+            // if (base.hasAuthority)
+            // {
                 Move();
-            }
+            // }
         }
 
         void Move()
@@ -61,10 +70,10 @@ namespace Units
 
         void LateUpdate()
         {
-            if (base.hasAuthority)
-            {
+            // if (base.hasAuthority)
+            // {
                 MoveCamera();
-            }
+            // }
         }
 
         void MoveCamera()
