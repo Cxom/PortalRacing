@@ -69,7 +69,7 @@ namespace Units
 
         void MoveCamera()
         {
-            float mouseX = Input.GetAxis("Mouse X") * Time.fixedDeltaTime * _yawRate;
+            float mouseX = Input.GetAxis("Mouse X") * Time.deltaTime * _yawRate;
             float mouseY = Input.GetAxis("Mouse Y") * Time.deltaTime * _pitchRate;
         
             // Find the current rotation
