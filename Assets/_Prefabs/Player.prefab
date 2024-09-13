@@ -464,8 +464,8 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0.1
   moveForce: 3000
-  _yawRate: 300
-  _pitchRate: 300
+  _yawRate: 1000
+  _pitchRate: 1000
   cameraOrientation: {fileID: 2372971139260643345}
 --- !u!114 &6782873654964769849
 MonoBehaviour:

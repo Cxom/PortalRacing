@@ -7,11 +7,10 @@
 !/ProjectSettings/
 
 # Not included (for now) for size
-/Assets/PolygonPrototype/
-!/Assets/PolygonPrototye
-/Assets/Mirror/
+/Assets/Plugins/PolygonPrototype/
+!/Assets/Plugins/PolygonPrototye
 
 # Not included because editor or temporary
-/Assets/tripolygon*
-/Assets/ParrelSync*
-/Assets/TemporaryThirdParty*
+/Assets/Plugins/tripolygon*
+/Assets/Plugins/ParrelSync*
+/Assets/Plugins/TemporaryThirdParty*
