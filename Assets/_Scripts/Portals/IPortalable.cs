@@ -5,6 +5,7 @@ using UnityEngine;
 public interface IPortalable
 {
 
+    // TODO replace primary bool with an enum
     Portal PlacePortal(PortalGun portalGun, bool primary, out Portal replacedPortal);
     void RemovePortal();
 

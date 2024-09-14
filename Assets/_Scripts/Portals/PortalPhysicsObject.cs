@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using Portals;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PortalPhysicsObject : PortalTraveller
 {
-
     
     Rigidbody _rigidbody;
 

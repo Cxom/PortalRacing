@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using Portals;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Serialization;
 
 // TODO namespace
 
@@ -30,8 +32,10 @@ public class Portal : MonoBehaviour
     public int recursionLimit = 5;
     public Renderer PortalBorder;
     public Collider screenCollider;
-    public Material portalMaterial;
-    public Material unlinkedMaterial;
+    [FormerlySerializedAs("portalMaterial")]
+    public Material linkedPortalMaterial;
+    [FormerlySerializedAs("unlinkedMaterial")]
+    public Material unlinkedPortalMaterial;
     
     [Header("Advanced Settings")] 
     public float nearClipOffset = 0.05f;
@@ -57,13 +61,13 @@ public class Portal : MonoBehaviour
     {
         if (linkedPortal)
         {
-            screen.material = portalMaterial;
+            screen.material = linkedPortalMaterial;
             screen.material.SetInt ("displayMask", 1);
             screenCollider.isTrigger = true;
         }
         else
         {
-            screen.material = unlinkedMaterial;
+            screen.material = unlinkedPortalMaterial;
             screenCollider.isTrigger = false;
         }
     }
@@ -92,9 +96,9 @@ public class Portal : MonoBehaviour
             
             var stepRay = new Ray(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition - traveller.previousUpdateStepPosition);
             
-            // Debug.DrawRay(traveller.transform.position, traveller.transform.up, Color.black, 3);
-            // Debug.DrawLine(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition, new Color(1f, .5f, 0f), 4);
-            // Debug.DrawRay(transform.position, offsetFromPortal*.5f, Color.blue, 4);
+            Debug.DrawRay(traveller.transform.position, traveller.transform.up, Color.black, 3);
+            Debug.DrawLine(traveller.previousUpdateStepPosition, traveller.currentUpdateStepPosition, new Color(1f, .5f, 0f), 4);
+            Debug.DrawRay(transform.position, offsetFromPortal*.5f, Color.blue, 4);
             
             // TODO placement in this code for handling screen-intersection detection
             var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
@@ -141,18 +145,26 @@ public class Portal : MonoBehaviour
     // Called just before the player camera is rendered
     public void Render(ScriptableRenderContext renderContext, Camera[] cams)
     {
-        // TODO handle initialization via some sort of action delegate when players are spawned
-        if (!playerCam)
+        // TODO handle initialization via some sort of action delegate when players are spawned (is this already done??)
+        Assert.IsNotNull(playerCam, "playerCam is null!");
+        if (playerCam == null)
         {
-            if (!Camera.main)
+            if (Camera.main == null)
             {
+                Debug.LogError("No main camera found!");
                 return;
             }
             playerCam = Camera.main;
+            Debug.LogError("Assigned player camera");
         }
         
-        if (!linkedPortal) return;
-        
+        if (linkedPortal == null) return;
+
+        // We're checking the linked portal's screen because we're RENDERING THE LINKED PORTAL'S screen.
+        // We do not render our own portal screen. It might be more responsible to be responsible for rendering our own
+        // screen, but in that case, the camera for doing that will be positioned at the linked portal. We have to
+        // take some responsibility for EITHER the SCREEN or the CAMERA at the linked portal, no way around it.
+        // TODO analyze if it is more responsible to render our own screen
         // TODO This check may need to be updated with more cameras that can see portals
         if (!VisibleFromCamera(linkedPortal.screen, playerCam))
         {
@@ -161,16 +173,22 @@ public class Portal : MonoBehaviour
         
         CreateViewTexture();
         
-        // hide screen object blocking our view
-        // Why is it casting shadows? Is this just a clever way to make the object invisible??
-        // TODO figure out the portal shadow situation and desired behaviour and correct it
-        // screen.enabled = false;
+        // We set the shadowCastingMode to shadows only as a trick to make the screen invisible to the portal camera,
+        // which needs to see through it to know what to render
+        // The shadows rendering are fine because the portal still "exists within a panel" that we would expect to cast the same shadows
+        // Still, it would be edifying to do a performance and result comparison of the following options someday
+        //  - Disabling the screen object (probably a bad idea, but I can't figure out what consequences doing this actually triggers immediately and what doesn't get triggered because the state at the end of the frame is the same as at the start)
+        //  - Setting the screen object shadowCastingMode to ShadowsOnly (are there potentially unwanted shadows? probably not, the portal panel still exists and would be casting shadows)
+        //  - Setting the layer mask to a layer that is not rendered by the camera (TODO could the screens just permanently exist on a layer not rendered by the portal cameras?)
+        //  - Setting the material to a transparent material
+        //  - Using a shader that discards all fragments
+        //  - Setting the alpha value of the material to 0
         screen.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
-        linkedPortal.screen.material.SetInt("displayMask", 0);
+        // linkedPortal.screen.material.SetInt("displayMask", 0);
 
         // Make portal cam position and rotation the same relative to this portal as player cam is to the linked portal
         portalCam.projectionMatrix = playerCam.projectionMatrix;
-        // TODO figure out math to align portal normals (so they're symmetric) in a less retarded way (don't rotate the linked portal temporarily, actually figure out the linalg...)
+        // TODO figure out if this comment is still relevant - math to align portal normals (so they're symmetric) in a less retarded way (don't rotate the linked portal temporarily, actually figure out the linalg...)
         // linkedPortal.transform.Rotate(linkedPortal.transform.up, 180);
         var m = transform.localToWorldMatrix * linkedPortal.transform.worldToLocalMatrix * playerCam.transform.localToWorldMatrix;
         // linkedPortal.transform.Rotate(linkedPortal.transform.up, -180);
@@ -239,7 +257,7 @@ public class Portal : MonoBehaviour
     // Called once all portals have been rendered, but before the player camera renders
     public void PostPortalRender()
     {
-        if (!playerCam || !linkedPortal) return;
+        if (playerCam == null || linkedPortal == null) return;
         ProtectScreenFromClipping(playerCam.transform.position);
     }
     

@@ -15,7 +15,7 @@ namespace Portals
         public Material[] cloneMaterials;
     
         public Vector3 previousPhysicsStepPosition { get; private set; }
-        Vector3 currentPhysicsStepPosition; // private;
+        Vector3 currentPhysicsStepPosition;
     
         public Vector3 previousUpdateStepPosition { get; private set; }
         public Vector3 currentUpdateStepPosition { get; private set; }
@@ -60,6 +60,7 @@ namespace Portals
         {
             if (graphicsClone == null)
             {
+                // TODO graphics clone transformation (location placement) is wrong when going through secondary portal
                 graphicsClone = Instantiate(graphicsObject);
                 graphicsClone.transform.parent = graphicsObject.transform.parent;
                 graphicsClone.transform.localScale = graphicsObject.transform.localScale;

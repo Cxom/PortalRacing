@@ -13,7 +13,7 @@ public class CameraPortalRendering : MonoBehaviour
     
     void Start()
     {
-        // something about portals idek
+        // find portals that are already in the world
         portals = FindObjectsOfType<Portal>().ToList();
         RenderPipelineManager.beginFrameRendering += DoPortalRendering;
     }
