@@ -12,7 +12,7 @@ namespace Client
         // public static Action<GameObject> OnOwnerCharacterSpawned;
 
         [Tooltip("Prefab for the player.")] [SerializeField]
-        PlayerMotor playerPrefab;
+        PlayerBasicRigidbodyMotor playerPrefab;
         
         GameObject playerInstance;
 

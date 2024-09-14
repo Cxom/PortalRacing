@@ -5,7 +5,7 @@ public class EndZone : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)
     {
-        PlayerMotor player = other.GetComponent<PlayerMotor>();
+        PlayerBasicRigidbodyMotor player = other.GetComponent<PlayerBasicRigidbodyMotor>();
         if (player)
         {
             // player.transform.position = 

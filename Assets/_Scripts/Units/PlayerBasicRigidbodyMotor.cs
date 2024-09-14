@@ -11,7 +11,7 @@ namespace Units
     /// <summary>
     /// A dummy super simple movement class for testing/implementing multiplayer code
     /// </summary>
-    public class PlayerMotor : MonoBehaviour
+    public class PlayerBasicRigidbodyMotor : MonoBehaviour
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
         [SerializeField] float moveForce = 3000f;
