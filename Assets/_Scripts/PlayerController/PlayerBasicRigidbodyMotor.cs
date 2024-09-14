@@ -1,55 +1,66 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
+using FishNet.Object;
 using UnityEngine;
-using UnityEngine.Assertions;
+using UnityEngine.Serialization;
 
 namespace Units
 {
-    
+    // TODO - use one main camera - not one per player
 
     /// <summary>
     /// A dummy super simple movement class for testing/implementing multiplayer code
     /// </summary>
-    public class PlayerBasicRigidbodyMotor : MonoBehaviour
+    public class PlayerBasicRigidbodyMotor : NetworkBehaviour
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
         [SerializeField] float moveForce = 3000f;
         
         [SerializeField] float _yawRate = 300f;
         [SerializeField] float _pitchRate = 300f;
-        [SerializeField] Transform cameraOrientation;
+        [SerializeField] Camera camera;
         
         float pitch;
         
         Rigidbody _rigidbody;
+        float forward;
+        float lateral;
 
         void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
         }
 
-        // public override void OnStartClient()
-        // {
-        //     base.OnStartClient();
-        //     if (base.hasAuthority)
-        //     {
-        //         // playerInputSystem.enabled = base.hasAuthority;
-        //         CaptureCursor();
-        //     }
-        // }
-
-        void OnEnable()
+        public override void OnStartClient()
         {
-            CaptureCursor();
+            base.OnStartClient();
+            if (base.IsOwner)
+            {
+                // playerInputSystem.enabled = base.hasAuthority;
+                camera.enabled = true;
+                camera.GetComponent<AudioListener>().enabled = true;
+            }
+            else
+            {
+                gameObject.GetComponent<PlayerBasicRigidbodyMotor>().enabled = false;
+            }
         }
 
-        static void CaptureCursor()
+        void Start()
+        {
+            LockCursor();
+        }
+
+        static void LockCursor()
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
 
+        void Update()
+        {
+            forward = Input.GetAxisRaw("Vertical");
+            lateral = Input.GetAxisRaw("Horizontal");
+        }
+        
         void FixedUpdate()
         {
             // if (base.hasAuthority)
@@ -60,9 +71,6 @@ namespace Units
 
         void Move()
         {
-            float forward = Input.GetAxisRaw("Vertical");
-            float lateral = Input.GetAxisRaw("Horizontal");
-            
             // Assert.AreEqual(Time.fixedDeltaTime, Time.deltaTime, "This should be a fixed update method.");
 
             Vector3 next = new Vector3(lateral, 0f, forward) * (Time.deltaTime * moveForce);
@@ -81,8 +89,8 @@ namespace Units
 
         void MoveCamera()
         {
-            float mouseX = Input.GetAxis("Mouse X") * Time.deltaTime * _yawRate;
-            float mouseY = Input.GetAxis("Mouse Y") * Time.deltaTime * _pitchRate;
+            float mouseX = Input.GetAxisRaw("Mouse X") * Time.deltaTime * _yawRate;
+            float mouseY = Input.GetAxisRaw("Mouse Y") * Time.deltaTime * _pitchRate;
         
             // Find the current rotation
             Vector3 rotation = transform.eulerAngles;
@@ -93,7 +101,7 @@ namespace Units
             pitch = Mathf.Clamp(pitch, -90f, 90f);
         
             // Perform rotations
-            cameraOrientation.localRotation = Quaternion.Euler(pitch, 0, 0);
+            camera.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
             transform.localRotation = Quaternion.Euler(0, yaw, 0);
         }
         
