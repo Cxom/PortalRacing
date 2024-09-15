@@ -47,6 +47,11 @@ public class Portal : MonoBehaviour
     List<PortalTraveller> trackedTravellers;
     RenderTexture viewTexture;
 
+    // TODO we need to handle proper adjustment of both trackedTravellers in the Portal class and trackedPortals in the PortalTraveller class WHEN
+    // - A traveller is in a threshold and shoots a portal out of it
+    // - A traveller is not in a threshold and shoots a portal close enough that they are immediately in it
+    // We also need to just clear these values when a portal is disabled no matter what
+    
     void OnEnable()
     {
         // TODO proper handling of cameras for portals through events
@@ -83,6 +88,7 @@ public class Portal : MonoBehaviour
     // Note that there is a choice here to teleport not in the physics loop. Primarily graphical (and uniformly applied to any portalTraveller)
     // so should be fine (I think). Main consequence is less deterministic physics since multiple travellers are teleported dependent on framerate
     // One idea to investigate later is temporarily separating the player camera from the player physics object
+    // TODO this (no longer?) seems to be handling camera logic - does it even need to be LateUpdate if it's not in the physics loop?
     void LateUpdate()
     {
         if (!linkedPortal) return;
@@ -102,8 +108,6 @@ public class Portal : MonoBehaviour
             
             // TODO placement in this code for handling screen-intersection detection
             var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
-            traveller.graphicsClone.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
-            Debug.Log($"{traveller.graphicsClone.name} {transform.position} ({transform.eulerAngles})");
             
             if ( !screenCollider.bounds.IntersectRay(stepRay, out float distance))
             {
@@ -239,7 +243,7 @@ public class Portal : MonoBehaviour
     {
         if (!trackedTravellers.Contains(traveller))
         {
-            traveller.EnterPortalThreshold();
+            traveller.EnterPortalThreshold(this);
             trackedTravellers.Add(traveller);
         }
     }
@@ -249,7 +253,7 @@ public class Portal : MonoBehaviour
         var traveller = other.GetComponent<PortalTraveller>();
         if (traveller && trackedTravellers.Contains(traveller))
         {
-            traveller.ExitPortalThreshold();
+            traveller.ExitPortalThreshold(this);
             trackedTravellers.Remove(traveller);
         }
     }
