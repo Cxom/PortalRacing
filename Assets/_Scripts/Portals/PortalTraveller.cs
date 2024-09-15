@@ -24,6 +24,8 @@ namespace Portals
         /// Portals whose tracking thresholds the traveller is currently within
         /// </summary>
         // TODO pool the graphics clones so we're not constantly instantiating and destroying them
+        // TODO the tracking box is big for the purpose of preventing tunneling through portals, but graphics clones are only needed during DIRECT INTERSECTION with the portal, so there's some possible optimization here
+        // TODO slice the graphics clones so that we don't see them behind portals
         Dictionary<Portal, GameObject> trackingPortalsToGraphicsClones = new();
         int teleportTracking;
     
@@ -42,19 +44,27 @@ namespace Portals
             foreach (var portal in trackingPortalsToGraphicsClones.Keys)
             {
                 GameObject graphicsClone = trackingPortalsToGraphicsClones[portal];
-                bool isPortalLinked = portal.LinkedPortal != null;
-                if (!graphicsClone.activeSelf && isPortalLinked)
+                // TODO optimize this by setting the graphics clone as active via a delegate or event when portals are linked
+                // Correct the active state of the graphics clone
+                if (!graphicsClone.activeSelf && portal.LinkedPortal != null)
                 {
                     graphicsClone.SetActive(true);
-                } else if (graphicsClone.activeSelf && !isPortalLinked)
+                } else if (graphicsClone.activeSelf && portal.LinkedPortal == null)
                 {
                     graphicsClone.SetActive(false);
                 }
-                Assert.AreEqual(graphicsClone.activeSelf, isPortalLinked);
-
-                // Each graphics clone needs to be positioned relative to the linked portal as we are to the current portal
+                Assert.AreEqual(graphicsClone.activeSelf, portal.LinkedPortal != null);
+                
+                // If the graphics clone is not active, we don't need to update its position
+                if (!graphicsClone.activeSelf)
+                {
+                    continue;
+                }
+                
                 Portal linkedPortal = portal.LinkedPortal;
                 Assert.IsNotNull(portal.LinkedPortal);
+                
+                // Each graphics clone needs to be positioned relative to the linked portal as we are to the current portal
                 var m = linkedPortal!.transform.localToWorldMatrix * portal.transform.worldToLocalMatrix * transform.localToWorldMatrix;
                 graphicsClone.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
                 // Debug.Log($"{graphicsClone.name} {transform.position} ({transform.eulerAngles})");
@@ -82,10 +92,9 @@ namespace Portals
             --teleportTracking;
         }
 
-        // Called when a traveller first touches a portal
+        // Called when a traveller enters the tracking bounding box of a portal
         public virtual void EnterPortalThreshold(Portal portal)
         {
-            Debug.Log($"ENTERING PORTAL THRESHOLD {portal.name}");
             GameObject graphicsClone = Instantiate(graphicsObject);
             graphicsClone.transform.parent = graphicsObject.transform.parent;
             graphicsClone.transform.localScale = graphicsObject.transform.localScale;
@@ -96,8 +105,7 @@ namespace Portals
 
             trackingPortalsToGraphicsClones[portal] = graphicsClone;
             
-            //TODO this totally breaks down when the two portal thresholds overlap
-            // it will be easiest to have a graphical clone for all portals that are currently tracking us
+            // it is easiest to have a graphical clone for all portals that are currently tracking us
             // could be more than two with multiplayer (but really shouldn't with good level design)!
             // there's still a conceivable case where portals are so close together that the clone actually intercepts a DIFFERENT portal than the linked output of the one the traveller is intersecting
             // but we should really try to prevent that case from happening through level design/editor limitations
@@ -107,7 +115,6 @@ namespace Portals
         // Called once a traveller is no longer touching a portal (except when teleporting)
         public virtual void ExitPortalThreshold(Portal portal)
         {
-            Debug.Log($"EXITING PORTAL THRESHOLD {portal.name}");
             // trackingPortalsToGraphicsClones[portal].SetActive(false);
             Destroy(trackingPortalsToGraphicsClones[portal]);
             trackingPortalsToGraphicsClones.Remove(portal);

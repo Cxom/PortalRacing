@@ -80,20 +80,6 @@ public class PortalGun : MonoBehaviour
         AttemptToLinkPortals();
     }
 
-    void AttemptToLinkPortals()
-    {
-        if (primaryPortal == null || secondaryPortal == null) return;
-        
-        primaryPortal.GetPortal().LinkedPortal = secondaryPortal.GetPortal();
-        secondaryPortal.GetPortal().LinkedPortal = primaryPortal.GetPortal();
-    }
-
-    void UpdateVisualIndicators()
-    {
-        primaryIndicator.SetActive(primaryPortal != null);
-        secondaryIndicator.SetActive(secondaryPortal != null);
-    }
-
     void UpdatePortalReferences(bool primary, IPortalable portalable)
     {
         if (primary)
@@ -106,5 +92,19 @@ public class PortalGun : MonoBehaviour
             secondaryPortal?.RemovePortal();
             secondaryPortal = portalable;
         }
+    }
+
+    void UpdateVisualIndicators()
+    {
+        primaryIndicator.SetActive(primaryPortal != null);
+        secondaryIndicator.SetActive(secondaryPortal != null);
+    }
+
+    void AttemptToLinkPortals()
+    {
+        if (primaryPortal == null || secondaryPortal == null) return;
+        
+        primaryPortal.GetPortal().LinkedPortal = secondaryPortal.GetPortal();
+        secondaryPortal.GetPortal().LinkedPortal = primaryPortal.GetPortal();
     }
 }

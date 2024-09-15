@@ -47,7 +47,7 @@ public class Portal : MonoBehaviour
     List<PortalTraveller> trackedTravellers;
     RenderTexture viewTexture;
 
-    // TODO we need to handle proper adjustment of both trackedTravellers in the Portal class and trackedPortals in the PortalTraveller class WHEN
+    // TODO debug confirm that we are properly handling adjustment of both trackedTravellers in the Portal class and trackedPortals in the PortalTraveller class WHEN
     // - A traveller is in a threshold and shoots a portal out of it
     // - A traveller is not in a threshold and shoots a portal close enough that they are immediately in it
     // We also need to just clear these values when a portal is disabled no matter what
@@ -77,6 +77,48 @@ public class Portal : MonoBehaviour
         }
     }
 
+    public void Activate(bool primary, PortalGun portalGun)
+    {
+        CameraPortalRendering.AddPortal(this);
+        // TODO This may need to be setting materials, not colors, so we can have different patterns for different players for increased accessibility
+        PortalBorder.materials[0].color = primary ? portalGun.primaryColor : portalGun.secondaryColor;
+        PortalBorder.materials[0].EnableKeyword("_EMISSION");
+        PortalBorder.materials[0].SetColor("_EmissionColor",
+            primary ? portalGun.primaryColor : portalGun.secondaryColor);
+
+        // We need one portal to be flipped around - just make it the secondary one
+        transform.localRotation = Quaternion.Euler(0, !primary ? 180 : 0, 0);
+        
+        gameObject.SetActive(true);
+        PortalBorder.gameObject.SetActive(true);
+    }
+    
+    public void Deactivate()
+    {
+        foreach (PortalTraveller trackedTraveller in trackedTravellers)
+        {
+            trackedTraveller.ExitPortalThreshold(this);
+        }
+        trackedTravellers.Clear();
+            
+        CameraPortalRendering.RemovePortal(this);
+        // Not sure if these really do anything, since it should be gone, might just be insurance
+        PortalBorder.materials[0].color = Color.white;
+        PortalBorder.materials[0].SetColor("_EmissionColor", Color.black);
+        
+        if (LinkedPortal != null)
+        {
+            LinkedPortal.LinkedPortal = null;
+            LinkedPortal = null;
+        }
+        
+        // Reset rotation in case portal was flipped around as a secondary portal
+        transform.localRotation = Quaternion.Euler(0, 0, 0);
+        
+        gameObject.SetActive(false);
+        PortalBorder.gameObject.SetActive(false);
+    }
+    
     // void FixedUpdate()
     // {
     //     foreach (var traveller in trackedTravellers)
