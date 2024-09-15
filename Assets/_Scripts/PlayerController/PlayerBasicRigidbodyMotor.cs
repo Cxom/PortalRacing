@@ -24,6 +24,8 @@ namespace Units
         float forward;
         float lateral;
 
+        bool paused = false;
+
         void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
@@ -55,12 +57,36 @@ namespace Units
             Cursor.visible = false;
         }
 
+        void UnlockCursor()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
         void Update()
         {
+            if (Input.GetKeyUp(KeyCode.P))
+            {
+                if (!paused)
+                {
+                    Debug.Log("Unlocking cursor");
+                    UnlockCursor();
+                    paused = true;
+                }   
+                else
+                {
+                    Debug.Log("Relocking cursor");
+                    LockCursor();
+                    paused = false;
+                }
+            }
+            
+            if (paused) return;
+            
             forward = Input.GetAxisRaw("Vertical");
             lateral = Input.GetAxisRaw("Horizontal");
         }
-        
+
         void FixedUpdate()
         {
             // if (base.hasAuthority)
@@ -89,6 +115,8 @@ namespace Units
 
         void MoveCamera()
         {
+            if (paused) return;
+            
             float mouseX = Input.GetAxisRaw("Mouse X") * Time.deltaTime * _yawRate;
             float mouseY = Input.GetAxisRaw("Mouse Y") * Time.deltaTime * _pitchRate;
         
