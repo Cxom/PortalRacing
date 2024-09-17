@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
 
@@ -32,7 +34,32 @@ public class PortalGun : NetworkBehaviour
     //  - if a portal was replaced, that it was removed
 
     //  - potential: an indicator on the player pawn/portal gun graphic object that shot the portal  
+
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        ServerManager.Objects.OnPreDestroyClientObjects += RemovePortalsOnDisconnect;
+    }
     
+    public override void OnStopServer()
+    {
+        base.OnStopServer();
+
+        ServerManager.Objects.OnPreDestroyClientObjects -= RemovePortalsOnDisconnect;
+    }
+
+    void RemovePortalsOnDisconnect(NetworkConnection conn)
+    {
+        if (conn != Owner) return;
+        
+        primaryPortal?.RemovePortal();
+        primaryPortal = null;
+        secondaryPortal?.RemovePortal();
+        secondaryPortal = null;
+    }
+
     public void CheckShootPortal()
     {
         if (!IsOwner)
@@ -143,7 +170,7 @@ public class PortalGun : NetworkBehaviour
     [ObserversRpc]
     void ObserversShootPortal(bool primary, Vector3 shotOrigin, Vector3 shotDirection)
     {
-        if (IsOwner || IsServer) return;
+        if (IsOwner || IsServerStarted) return;
         // Any validity checks here?
         
         ShootPortal(primary, shotOrigin, shotDirection);
