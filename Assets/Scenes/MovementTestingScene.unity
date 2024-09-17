@@ -3203,7 +3203,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 7.5, y: -4, z: 0}
-  m_LocalScale: {x: 2, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 1.25, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1237500527}
@@ -11247,10 +11247,9 @@ MonoBehaviour:
   screenCollider: {fileID: 591561241}
   linkedPortalMaterial: {fileID: 0}
   unlinkedPortalMaterial: {fileID: 0}
+  portalCam: {fileID: 0}
   nearClipOffset: 0.05
   nearClipLimit: 0.2
-  portalCam: {fileID: 0}
-  playerCam: {fileID: 0}
 --- !u!65 &751277423
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -27424,10 +27423,9 @@ MonoBehaviour:
   screenCollider: {fileID: 553580582}
   linkedPortalMaterial: {fileID: 0}
   unlinkedPortalMaterial: {fileID: 0}
+  portalCam: {fileID: 0}
   nearClipOffset: 0.05
   nearClipLimit: 0.2
-  portalCam: {fileID: 0}
-  playerCam: {fileID: 0}
 --- !u!4 &1708010594
 Transform:
   m_ObjectHideFlags: 0

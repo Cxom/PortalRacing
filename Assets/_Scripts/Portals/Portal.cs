@@ -34,7 +34,11 @@ public class Portal : MonoBehaviour
     [FormerlySerializedAs("unlinkedMaterial")]
     public Material unlinkedPortalMaterial;
     
+    [SerializeField]
+    Camera portalCam;
+    
     [Header("Advanced Settings")] 
+    // TODO USE THESE
     public float nearClipOffset = 0.05f;
     public float nearClipLimit = 0.2f;
     
@@ -42,8 +46,7 @@ public class Portal : MonoBehaviour
     PortalGun portalOwner;
     bool primary;
     
-    public Camera portalCam;
-    public Camera playerCam;
+    Camera playerCam;
     List<PortalTraveller> trackedTravellers;
     RenderTexture viewTexture;
 
@@ -56,7 +59,6 @@ public class Portal : MonoBehaviour
     {
         // TODO proper handling of cameras for portals through events
         playerCam = Camera.main;
-        portalCam = GetComponentInChildren<Camera>();
         portalCam.enabled = false; // We want to manually control this camera
         trackedTravellers = new List<PortalTraveller>();
         UpdatePortalActiveState();

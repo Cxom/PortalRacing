@@ -1,18 +1,21 @@
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class PortalPanel : MonoBehaviour, IPortalable
 {
     bool active;
     bool primary;
-    [SerializeField] Portal portal;
+    [SerializeField] Portal portalPrefab;
     [SerializeField] GameObject panel;
 
+    Portal portalInstance;
+    
     public Portal PlacePortal(PortalGun portalGun, bool primary, out Portal replacedPortal)
     {
         // Replace any existing portal
         if (active)
         {
-            replacedPortal = portal;
+            replacedPortal = portalInstance;
             Debug.Log("Replacing portal");
             RemovePortal();
         }
@@ -23,16 +26,19 @@ public class PortalPanel : MonoBehaviour, IPortalable
         
         this.primary = primary;
         active = true;
-        portal.Activate(this.primary, portalGun);
+        
+        portalInstance = Instantiate(portalPrefab, transform);
+        portalInstance.Activate(this.primary, portalGun);
         panel.SetActive(false);
 
-        return portal;
+        return portalInstance;
     }
 
     public void RemovePortal()
     {
         active = false;
-        portal.Deactivate();
+        portalInstance.Deactivate();
+        Destroy(portalInstance);
         panel.SetActive(true);
     }
 
@@ -45,6 +51,7 @@ public class PortalPanel : MonoBehaviour, IPortalable
     {
         // Do to the design of original portal panels, there is always a portal object, just it's disabled sometimes
         // To emulate the api other portalables should have, we return null if the portal is not active
-        return active ? portal : null;
+        Assert.IsTrue((portalInstance != null) == active, "Portal instance existence should match active state");
+        return portalInstance;
     }
 }
