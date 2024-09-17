@@ -9,6 +9,7 @@ namespace Units
     /// <summary>
     /// A dummy super simple movement class for testing/implementing multiplayer code
     /// </summary>
+    [RequireComponent(typeof(Rigidbody))]
     public class PlayerBasicRigidbodyMotor : NetworkBehaviour
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
@@ -21,33 +22,31 @@ namespace Units
         float pitch;
         
         Rigidbody _rigidbody;
+        PortalGun _portalGun;
         float forward;
         float lateral;
 
         bool paused = false;
 
-        void Awake()
+        public override void OnStartNetwork()
         {
+            base.OnStartNetwork();
+            
             _rigidbody = GetComponent<Rigidbody>();
+            _portalGun = GetComponent<PortalGun>();
         }
 
         public override void OnStartClient()
         {
             base.OnStartClient();
-            if (base.IsOwner)
+            if (!IsOwner)
             {
-                // playerInputSystem.enabled = base.hasAuthority;
-                camera.enabled = true;
-                camera.GetComponent<AudioListener>().enabled = true;
+                enabled = false;
+                return;
             }
-            else
-            {
-                gameObject.GetComponent<PlayerBasicRigidbodyMotor>().enabled = false;
-            }
-        }
-
-        void Start()
-        {
+            
+            camera.enabled = true;
+            camera.GetComponent<AudioListener>().enabled = true;
             LockCursor();
         }
 
@@ -85,6 +84,8 @@ namespace Units
             
             forward = Input.GetAxisRaw("Vertical");
             lateral = Input.GetAxisRaw("Horizontal");
+
+            _portalGun.CheckShootPortal();
         }
 
         void FixedUpdate()

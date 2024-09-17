@@ -16,11 +16,8 @@ public class Portal : MonoBehaviour
     [Header("Main Settings")] 
     Portal linkedPortal;
     public Portal LinkedPortal {
-        get
-        {
-            return linkedPortal;
-        }
-        
+        get => linkedPortal;
+
         set
         {
             linkedPortal = value;
@@ -42,6 +39,9 @@ public class Portal : MonoBehaviour
     public float nearClipLimit = 0.2f;
     
     // Private variables
+    PortalGun portalOwner;
+    bool primary;
+    
     public Camera portalCam;
     public Camera playerCam;
     List<PortalTraveller> trackedTravellers;
@@ -79,6 +79,9 @@ public class Portal : MonoBehaviour
 
     public void Activate(bool primary, PortalGun portalGun)
     {
+        this.primary = primary;
+        portalOwner = portalGun;
+        
         CameraPortalRendering.AddPortal(this);
         // TODO This may need to be setting materials, not colors, so we can have different patterns for different players for increased accessibility
         PortalBorder.materials[0].color = primary ? portalGun.primaryColor : portalGun.secondaryColor;
@@ -95,6 +98,9 @@ public class Portal : MonoBehaviour
     
     public void Deactivate()
     {
+        portalOwner.PortalWasDeactivated(primary);
+        portalOwner = null;
+        
         foreach (PortalTraveller trackedTraveller in trackedTravellers)
         {
             trackedTraveller.ExitPortalThreshold(this);
@@ -134,6 +140,8 @@ public class Portal : MonoBehaviour
     void LateUpdate()
     {
         if (!linkedPortal) return;
+        
+        Debug.DrawLine(transform.position, linkedPortal.transform.position);
         
         for (int i = 0; i < trackedTravellers.Count; ++i)
         {
@@ -257,8 +265,8 @@ public class Portal : MonoBehaviour
     void CreateViewTexture()
     {
         // TODO 2024 - the texture is not being successfully reused - rather this is causing an issue where previously used portals just render gray - figure out how to properly reuse render textures - DO NOT REINITIALIZE EVERY TIME
-        // if (viewTexture == null || viewTexture.width != Screen.width || viewTexture.height != Screen.height)
-        // {
+        if (viewTexture == null || viewTexture.width != Screen.width || viewTexture.height != Screen.height)
+        {
             if (viewTexture != null)
             {
                 viewTexture.Release();
@@ -268,8 +276,8 @@ public class Portal : MonoBehaviour
             portalCam.targetTexture = viewTexture;
             // Display the view texture on the screen of the linked portal
             // TODO Change for dynamic portals (link may not exist)
-            linkedPortal.screen.material.SetTexture("_MainTex", viewTexture);
-        // }
+        }
+        linkedPortal.screen.material.SetTexture("_MainTex", portalCam.targetTexture);
     }
 
     void OnTriggerEnter(Collider other)

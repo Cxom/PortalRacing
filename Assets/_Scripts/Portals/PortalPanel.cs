@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 public class PortalPanel : MonoBehaviour, IPortalable
 {
@@ -16,6 +13,7 @@ public class PortalPanel : MonoBehaviour, IPortalable
         if (active)
         {
             replacedPortal = portal;
+            Debug.Log("Replacing portal");
             RemovePortal();
         }
         else
@@ -45,6 +43,8 @@ public class PortalPanel : MonoBehaviour, IPortalable
 
     public Portal GetPortal()
     {
-        return portal;
+        // Do to the design of original portal panels, there is always a portal object, just it's disabled sometimes
+        // To emulate the api other portalables should have, we return null if the portal is not active
+        return active ? portal : null;
     }
 }

@@ -1,17 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
+using FishNet.Object;
 using UnityEngine;
 
-public class PortalGun : MonoBehaviour
+public class PortalGun : NetworkBehaviour
 {
-    
-
     [Header("Portal Gun")]
     [SerializeField] float range = 100f;
     [SerializeField] float beamSpeed = 100f;
     [SerializeField] public Color primaryColor;
     [SerializeField] public Color secondaryColor;
-    public Color SecondaryColor { get; private set; }
+    // public Color SecondaryColor { get; private set; }
     
     [SerializeField] Transform orientation;
     [SerializeField] Transform shootOrigin;
@@ -27,23 +26,40 @@ public class PortalGun : MonoBehaviour
     IPortalable primaryPortal;
     IPortalable secondaryPortal;
 
-    void Update()
+    // When a player shoots a portal, we need to convey to other players the following things:
+    //  - the beam actually shot
+    //  - the newly placed portal
+    //  - if a portal was replaced, that it was removed
+
+    //  - potential: an indicator on the player pawn/portal gun graphic object that shot the portal  
+    
+    public void CheckShootPortal()
     {
+        if (!IsOwner)
+        {
+            Debug.Log("Expected check shoot portal to only be called by the local owner!");
+            return;
+        }
+        
         if (Input.GetButtonDown("Fire1"))
         {
-            ShootPortal(true);
+            bool primary = true;
+            ShootPortal(primary, orientation.position, orientation.forward);
+            CmdShootPortal(primary, orientation.position, orientation.forward);
         }
 
         if (Input.GetButtonDown("Fire2"))
         {
-            ShootPortal(false);
+            bool primary = false;
+            ShootPortal(primary, orientation.position, orientation.forward);
+            CmdShootPortal(primary, orientation.position, orientation.forward);
         }
     }
 
-    void ShootPortal(bool primary)
+    void ShootPortal(bool primary, Vector3 shotOrigin, Vector3 shotDirection)
     {
         RaycastHit hit;
-        if (!Physics.Raycast(orientation.position, orientation.forward, out hit, range, collisionMask)) return;
+        if (!Physics.Raycast(shotOrigin, shotDirection, out hit, range, collisionMask)) return;
         // we have a hit
         
         IPortalable portalable = hit.collider.GetComponentInParent<IPortalable>();
@@ -106,5 +122,43 @@ public class PortalGun : MonoBehaviour
         
         primaryPortal.GetPortal().LinkedPortal = secondaryPortal.GetPortal();
         secondaryPortal.GetPortal().LinkedPortal = primaryPortal.GetPortal();
+    }
+
+    [ServerRpc]
+    void CmdShootPortal(bool primary, Vector3 shotOrigin, Vector3 shotDirection)
+    {
+        //Only fire again on server if not client host/owner.
+        if (!base.IsOwner)
+        {
+            // TODO validity checks
+            // I think we can probably skip distance checks - we always need to know about portal updates
+            // But maybe if we want we can TODO optimize out beam firing being sent to clients from other players super far away
+            
+            ShootPortal(primary, shotOrigin, shotDirection);
+        }
+
+        ObserversShootPortal(primary, shotOrigin, shotDirection);
+    }
+
+    [ObserversRpc]
+    void ObserversShootPortal(bool primary, Vector3 shotOrigin, Vector3 shotDirection)
+    {
+        if (IsOwner || IsServer) return;
+        // Any validity checks here?
+        
+        ShootPortal(primary, shotOrigin, shotDirection);
+    }
+
+    // TODO do this with an event maybe?
+    public void PortalWasDeactivated(bool primary)
+    {
+        if (primary)
+        {
+            primaryPortal = null;
+        }
+        else
+        {
+            secondaryPortal = null;
+        }
     }
 }
