@@ -188,4 +188,9 @@ public class PortalGun : NetworkBehaviour
             secondaryPortal = null;
         }
     }
+
+    public Portal GetPortal(bool primary)
+    {
+        return primary ? primaryPortal?.GetPortal() : secondaryPortal?.GetPortal();
+    }
 }

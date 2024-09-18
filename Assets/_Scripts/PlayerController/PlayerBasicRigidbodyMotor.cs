@@ -64,6 +64,8 @@ namespace Units
 
         void Update()
         {
+            if (!IsOwner) return;
+            
             if (Input.GetKeyUp(KeyCode.P))
             {
                 if (!paused)

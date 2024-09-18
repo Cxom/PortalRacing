@@ -11,37 +11,33 @@ using UnityEngine.Serialization;
 
 public class Portal : MonoBehaviour
 {
-    // TODO fix access modifiers
-
     [Header("Main Settings")] 
-    Portal linkedPortal;
+    [SerializeField] MeshRenderer screen;
+    // [SerializeField] int recursionLimit = 5; // TODO recursion limit
+    [FormerlySerializedAs("PortalBorder")]
+    [SerializeField] Renderer portalBorder;
+    [SerializeField] Collider screenCollider;
+    [SerializeField] Material linkedPortalMaterial;
+    [SerializeField] Material unlinkedPortalMaterial;
+    [SerializeField] Camera portalCam;
+
+    // [Header("Advanced Settings")] 
+    // TODO USE near clip settings
+    // [SerializeField] float nearClipOffset = 0.05f;
+    // [SerializeField] float nearClipLimit = 0.2f;
+    
+    
+    Portal _linkedPortal;
     public Portal LinkedPortal {
-        get => linkedPortal;
+        get => _linkedPortal;
 
         set
         {
-            linkedPortal = value;
+            _linkedPortal = value;
             UpdatePortalActiveState();
         } 
     }
-    
-    public MeshRenderer screen;
-    public int recursionLimit = 5;
-    public Renderer PortalBorder;
-    public Collider screenCollider;
-    [FormerlySerializedAs("portalMaterial")]
-    public Material linkedPortalMaterial;
-    [FormerlySerializedAs("unlinkedMaterial")]
-    public Material unlinkedPortalMaterial;
-    
-    [SerializeField]
-    Camera portalCam;
-    
-    [Header("Advanced Settings")] 
-    // TODO USE THESE
-    public float nearClipOffset = 0.05f;
-    public float nearClipLimit = 0.2f;
-    
+
     // Private variables
     PortalGun portalOwner;
     bool primary;
@@ -66,7 +62,7 @@ public class Portal : MonoBehaviour
     
     void UpdatePortalActiveState()
     {
-        if (linkedPortal)
+        if (_linkedPortal)
         {
             screen.material = linkedPortalMaterial;
             screen.material.SetInt ("displayMask", 1);
@@ -86,16 +82,16 @@ public class Portal : MonoBehaviour
         
         CameraPortalRendering.AddPortal(this);
         // TODO This may need to be setting materials, not colors, so we can have different patterns for different players for increased accessibility
-        PortalBorder.materials[0].color = primary ? portalGun.primaryColor : portalGun.secondaryColor;
-        PortalBorder.materials[0].EnableKeyword("_EMISSION");
-        PortalBorder.materials[0].SetColor("_EmissionColor",
+        portalBorder.materials[0].color = primary ? portalGun.primaryColor : portalGun.secondaryColor;
+        portalBorder.materials[0].EnableKeyword("_EMISSION");
+        portalBorder.materials[0].SetColor("_EmissionColor",
             primary ? portalGun.primaryColor : portalGun.secondaryColor);
 
         // We need one portal to be flipped around - just make it the secondary one
         transform.localRotation = Quaternion.Euler(0, !primary ? 180 : 0, 0);
         
         gameObject.SetActive(true);
-        PortalBorder.gameObject.SetActive(true);
+        portalBorder.gameObject.SetActive(true);
     }
     
     public void Deactivate()
@@ -111,8 +107,8 @@ public class Portal : MonoBehaviour
             
         CameraPortalRendering.RemovePortal(this);
         // Not sure if these really do anything, since it should be gone, might just be insurance
-        PortalBorder.materials[0].color = Color.white;
-        PortalBorder.materials[0].SetColor("_EmissionColor", Color.black);
+        portalBorder.materials[0].color = Color.white;
+        portalBorder.materials[0].SetColor("_EmissionColor", Color.black);
         
         if (LinkedPortal != null)
         {
@@ -124,7 +120,7 @@ public class Portal : MonoBehaviour
         transform.localRotation = Quaternion.Euler(0, 0, 0);
         
         gameObject.SetActive(false);
-        PortalBorder.gameObject.SetActive(false);
+        portalBorder.gameObject.SetActive(false);
     }
     
     // void FixedUpdate()
@@ -141,9 +137,9 @@ public class Portal : MonoBehaviour
     // TODO this (no longer?) seems to be handling camera logic - does it even need to be LateUpdate if it's not in the physics loop?
     void LateUpdate()
     {
-        if (!linkedPortal) return;
+        if (!_linkedPortal) return;
         
-        Debug.DrawLine(transform.position, linkedPortal.transform.position);
+        Debug.DrawLine(transform.position, _linkedPortal.transform.position);
         
         for (int i = 0; i < trackedTravellers.Count; ++i)
         {
@@ -159,7 +155,7 @@ public class Portal : MonoBehaviour
             Debug.DrawRay(transform.position, offsetFromPortal*.5f, Color.blue, 4);
             
             // TODO placement in this code for handling screen-intersection detection
-            var m = linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
+            var m = _linkedPortal.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerTransform.localToWorldMatrix;
             
             if ( !screenCollider.bounds.IntersectRay(stepRay, out float distance))
             {
@@ -187,12 +183,12 @@ public class Portal : MonoBehaviour
                 // Also note that as long as portals are set up to work from both sides (a distinction only made in terms of graphical affordances)
                 // it technically doesn't matter, it's just cleaner from the perspective of the editor
                 // linkedPortal.transform.Rotate(linkedPortal.transform.up, 180);
-                traveller.Teleport(transform, linkedPortal.transform, m.GetColumn(3), m.rotation);
+                traveller.Teleport(transform, _linkedPortal.transform, m.GetColumn(3), m.rotation);
                 // linkedPortal.transform.Rotate(linkedPortal.transform.up, -180);
 
                 // Can't rely on OnTriggerEnter/Exit to be called next frame because it depends on the physics loop, not the update loop
                 // This results in the portal teleporting twice or more by unpredictably screwing with the portal side calculations (I think)
-                linkedPortal.OnTravellerEnterPortal(traveller);
+                _linkedPortal.OnTravellerEnterPortal(traveller);
                 --i;
             }
         }
@@ -214,7 +210,7 @@ public class Portal : MonoBehaviour
             Debug.LogError("Assigned player camera");
         }
         
-        if (linkedPortal == null) return;
+        if (_linkedPortal == null) return;
 
         // We're checking the linked portal's screen because we're RENDERING THE LINKED PORTAL'S screen.
         // We do not render our own portal screen. It might be more responsible to be responsible for rendering our own
@@ -222,7 +218,7 @@ public class Portal : MonoBehaviour
         // take some responsibility for EITHER the SCREEN or the CAMERA at the linked portal, no way around it.
         // TODO analyze if it is more responsible to render our own screen
         // TODO This check may need to be updated with more cameras that can see portals
-        if (!VisibleFromCamera(linkedPortal.screen, playerCam))
+        if (!VisibleFromCamera(_linkedPortal.screen, playerCam))
         {
             return;
         }
@@ -246,7 +242,7 @@ public class Portal : MonoBehaviour
         portalCam.projectionMatrix = playerCam.projectionMatrix;
         // TODO figure out if this comment is still relevant - math to align portal normals (so they're symmetric) in a less retarded way (don't rotate the linked portal temporarily, actually figure out the linalg...)
         // linkedPortal.transform.Rotate(linkedPortal.transform.up, 180);
-        var m = transform.localToWorldMatrix * linkedPortal.transform.worldToLocalMatrix * playerCam.transform.localToWorldMatrix;
+        var m = transform.localToWorldMatrix * _linkedPortal.transform.worldToLocalMatrix * playerCam.transform.localToWorldMatrix;
         // linkedPortal.transform.Rotate(linkedPortal.transform.up, -180);
         portalCam.transform.SetPositionAndRotation(m.GetColumn(3), m.rotation);
 
@@ -255,7 +251,7 @@ public class Portal : MonoBehaviour
         UniversalRenderPipeline.RenderSingleCamera(renderContext, portalCam);
         
         // screen.enabled = true;
-        linkedPortal.screen.material.SetInt("displayMask", 1);
+        _linkedPortal.screen.material.SetInt("displayMask", 1);
         screen.shadowCastingMode = ShadowCastingMode.On;
     }
 
@@ -279,7 +275,7 @@ public class Portal : MonoBehaviour
             // Display the view texture on the screen of the linked portal
             // TODO Change for dynamic portals (link may not exist)
         }
-        linkedPortal.screen.material.SetTexture("_MainTex", portalCam.targetTexture);
+        _linkedPortal.screen.material.SetTexture("_MainTex", portalCam.targetTexture);
     }
 
     void OnTriggerEnter(Collider other)
@@ -313,7 +309,7 @@ public class Portal : MonoBehaviour
     // Called once all portals have been rendered, but before the player camera renders
     public void PostPortalRender()
     {
-        if (playerCam == null || linkedPortal == null) return;
+        if (playerCam == null || _linkedPortal == null) return;
         ProtectScreenFromClipping(playerCam.transform.position);
     }
     
@@ -361,11 +357,11 @@ public class Portal : MonoBehaviour
         // Calculate the slice normal
         int side = SideOfPortal(traveller.transform.position);
         Vector3 sliceNormal = transform.forward * -side;
-        Vector3 cloneSliceNormal = linkedPortal.transform.forward * side;
+        Vector3 cloneSliceNormal = _linkedPortal.transform.forward * side;
         
         // Calculate the slice center
         Vector3 slicePosition = transform.position;
-        Vector3 cloneSlicePosition = linkedPortal.transform.position;
+        Vector3 cloneSlicePosition = _linkedPortal.transform.position;
         
         // Apply parameters
         for (int i = 0; i < traveller.originalMaterials.Length; ++i)
