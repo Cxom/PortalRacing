@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using FishNet;
+using FishNet.Object;
 using Portals;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -37,6 +39,8 @@ public class Portal : MonoBehaviour
             UpdatePortalActiveState();
         } 
     }
+    
+    bool IsActive => _linkedPortal != null;
 
     // Private variables
     PortalGun portalOwner;
@@ -54,6 +58,7 @@ public class Portal : MonoBehaviour
     void OnEnable()
     {
         // TODO proper handling of cameras for portals through events
+        // TODO initialize camera based on the local player instance's camera, not just camera main
         playerCam = Camera.main;
         portalCam.enabled = false; // We want to manually control this camera
         trackedTravellers = new List<PortalTraveller>();
@@ -110,7 +115,7 @@ public class Portal : MonoBehaviour
         portalBorder.materials[0].color = Color.white;
         portalBorder.materials[0].SetColor("_EmissionColor", Color.black);
         
-        if (LinkedPortal != null)
+        if (IsActive)
         {
             LinkedPortal.LinkedPortal = null;
             LinkedPortal = null;
@@ -198,19 +203,14 @@ public class Portal : MonoBehaviour
     public void Render(ScriptableRenderContext renderContext, Camera[] cams)
     {
         // TODO handle initialization via some sort of action delegate when players are spawned (is this already done??)
-        Assert.IsNotNull(playerCam, "playerCam is null!");
-        if (playerCam == null)
+        // We assume that the local player is always available and that they have a camera going - that's what we want to render for them after all!
+        if (playerCam == null && IsActive)
         {
-            if (Camera.main == null)
-            {
-                Debug.LogError("No main camera found!");
-                return;
-            }
-            playerCam = Camera.main;
-            Debug.LogError("Assigned player camera");
+            Debug.LogError("Player camera is null! Not sure what's going on, it should never be! Deactivating portal!");
+            Deactivate();
         }
         
-        if (_linkedPortal == null) return;
+        if (!IsActive) return;
 
         // We're checking the linked portal's screen because we're RENDERING THE LINKED PORTAL'S screen.
         // We do not render our own portal screen. It might be more responsible to be responsible for rendering our own
@@ -309,7 +309,7 @@ public class Portal : MonoBehaviour
     // Called once all portals have been rendered, but before the player camera renders
     public void PostPortalRender()
     {
-        if (playerCam == null || _linkedPortal == null) return;
+        if (playerCam == null || !IsActive) return;
         ProtectScreenFromClipping(playerCam.transform.position);
     }
     
