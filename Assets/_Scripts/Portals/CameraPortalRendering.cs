@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using FishNet;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -13,6 +14,8 @@ public class CameraPortalRendering : MonoBehaviour
     
     void Start()
     {
+        if (InstanceFinder.IsServerOnlyStarted) return;
+        
         // find portals that are already in the world
         portals = FindObjectsOfType<Portal>().ToList();
         RenderPipelineManager.beginFrameRendering += DoPortalRendering;
@@ -30,6 +33,8 @@ public class CameraPortalRendering : MonoBehaviour
     
     void OnDestroy()
     {
+        if (InstanceFinder.IsServerOnlyStarted) return;
+        
         RenderPipelineManager.beginFrameRendering -= DoPortalRendering;
     }
 
