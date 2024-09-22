@@ -29,7 +29,6 @@ public class PortalPanel : IPortalable
         if (active)
         {
             replacedPortal = portalInstance;
-            Debug.Log("Replacing portal");
             RemovePortal();
         }
         else
@@ -38,13 +37,9 @@ public class PortalPanel : IPortalable
         }
         
         this.primary = primary;
-        active = true;
         
+        active = true;
         portalInstance = Instantiate(portalPrefab, transform);
-        // if (InstanceFinder.IsServerStarted)
-        // {
-        //     InstanceFinder.ServerManager.Spawn(portalInstance.gameObject);
-        // }
         portalInstance.Activate(this.primary, portalGun);
         panel.SetActive(false);
 
@@ -56,10 +51,6 @@ public class PortalPanel : IPortalable
         active = false;
         portalInstance.Deactivate();
         Destroy(portalInstance);
-        // if (InstanceFinder.IsServerStarted)
-        // {
-        //     InstanceFinder.ServerManager.Despawn(portalInstance.gameObject);
-        // }
         portalInstance = null;
         panel.SetActive(true);
     }

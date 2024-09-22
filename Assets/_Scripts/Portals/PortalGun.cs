@@ -1,6 +1,7 @@
 using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public class PortalGun : NetworkBehaviour
 {
@@ -44,6 +45,17 @@ public class PortalGun : NetworkBehaviour
         ServerManager.Objects.OnPreDestroyClientObjects += RemovePortalsOnDisconnect;
     }
     
+    public override void OnSpawnServer(NetworkConnection connection)
+    {
+        base.OnSpawnServer(connection);
+
+        // We don't need to send the newly connected client their own (null) portalables!
+        if (Owner != connection)
+        {
+            InitializePortalsFromServer(connection, primaryPortalable, secondaryPortalable);
+        }
+    }
+    
     public override void OnStopServer()
     {
         base.OnStopServer();
@@ -72,7 +84,7 @@ public class PortalGun : NetworkBehaviour
     {
         if (!IsOwner)
         {
-            Debug.Log("Expected check shoot portal to only be called by the local owner!");
+            Debug.Log("Expected check shoot portal to only be called by the local owner, but it wasn't!");
             return;
         }
         
@@ -110,26 +122,11 @@ public class PortalGun : NetworkBehaviour
         Portal replacedPortal;
         Portal placedPortal = portalable.PlacePortal(this, primary, out replacedPortal);
 
-        if (replacedPortal != null)
-        {
-            Debug.Log("Portal " + replacedPortal.gameObject.GetFullPathName() + " was replaced!");
-            // Don't disable the other portal I think the IPortalable should handle that
-            // TODO solve portal lifetime. Basically we have a portalable, which could have dynamic or static portal lifetimes
-            //       Even more basically, we have multiple reasons why a portal could be removed, and we need to handle updating the gun state for them all
-            // But we also need some conceptualization of if one portal replaces another
-            // This is probably best done with links between from the portal to the gun,
-            // but nevertheless it needs planned and solved once and properly
-            if (primaryPortalable != null && replacedPortal == primaryPortalable.GetPortal())
-            {
-                Debug.Log("Removing primary portal because it was replaced!");
-                primaryPortalable = null;
-            } 
-            else if (secondaryPortalable != null && replacedPortal == secondaryPortalable.GetPortal())
-            {
-                Debug.Log("Removing secondary portal because it was replaced!");
-                secondaryPortalable = null;
-            }
-        }
+        // TODO solve portal lifetime. Basically we have a portalable, which could have dynamic or static portal lifetimes
+        //       Even more basically, we have multiple reasons why a portal could be removed, and we need to handle updating the gun state for them all
+        // But we also need some conceptualization of if one portal replaces another
+        // This is probably best done with links between from the portal to the gun,
+        // but nevertheless it needs planned and solved once and properly
         
         // Update portal references
         UpdatePortalReferences(primary, portalable);
@@ -145,30 +142,26 @@ public class PortalGun : NetworkBehaviour
     {
         if (primary)
         {
-            Debug.Log($"primary portalable is the same as portalable: {primaryPortalable == portalable}");
+            // On paper, the new portalable should never be able to be the same as the existing, so the secondary condition checks are safety
+            // - if it is reshot, it is cleared by the IPortalable::PlacePortal call as a replace, so primaryPortalable is null
+            // - if it is not reshot, then portalable is different by definition
+            
+            Assert.AreNotEqual(primaryPortalable, portalable, "primary portalable is the same as portalable");
             if (primaryPortalable != null && primaryPortalable != portalable)
             {
-                Debug.Log("Removing primary portal because it was shot elsewhere!");
+                //Removing primary portal because it was shot elsewhere!
                 primaryPortalable.RemovePortal();
-            }
-            else
-            {
-                Debug.Log("It seems like there was not a primary portalable to remove!");
             }
 
             primaryPortalable = portalable;
         }
         else
         {
-            Debug.Log($"secondary portalable is the same as portalable: {secondaryPortalable == portalable}");
+            Assert.AreNotEqual(secondaryPortalable, portalable, "secondary portalable is the same as portalable");
             if (secondaryPortalable != null && secondaryPortalable != portalable)
             {
-                Debug.Log("Removing secondary portal because it was shot elsewhere!");
+                //Removing secondary portal because it was shot elsewhere!
                 secondaryPortalable.RemovePortal();
-            }
-            else
-            {
-                Debug.Log("It seems like there was not a secondary portalable to remove!");
             }
 
             secondaryPortalable = portalable;
@@ -210,8 +203,6 @@ public class PortalGun : NetworkBehaviour
         if (IsOwner || IsServerStarted) return;
         // Any validity checks here?
 
-        Debug.Log("Doing observers shoot portal for other client's shot!");
-        
         ShootPortal(primary, shotOrigin, shotDirection);
     }
 
@@ -237,25 +228,19 @@ public class PortalGun : NetworkBehaviour
     }
 
     [TargetRpc]
-    internal void InitializePortalsFromServer(NetworkConnection conn, IPortalable primaryPortalable, IPortalable secondaryPortalable)
+    void InitializePortalsFromServer(NetworkConnection conn, IPortalable primaryPortalable, IPortalable secondaryPortalable)
     {
-        Debug.Log("InitializePortalsFromServer!!!");
-
-        if (IsOwner)
-        {
-            Debug.Log("Assuming both portals are null on owner: " + (primaryPortalable == null) + " " +
-                      (secondaryPortalable == null));
-        }
+        Assert.IsFalse(IsOwner, "The server shouldn't be trying to initialize a client's own portal gun!");
         
         if (primaryPortalable != null)
         {
-            Debug.Log($"Recasting primary portal on [{primaryPortalable.gameObject.GetFullPathName()}]");
+            // Debug.Log($"Recasting primary portal on [{primaryPortalable.gameObject.GetFullPathName()}]");
             CreatePortalAfterHit(true, primaryPortalable);
         }
 
         if (secondaryPortalable != null)
         {
-            Debug.Log($"Recasting secondary portal on [{secondaryPortalable.gameObject.GetFullPathName()}]");
+            // Debug.Log($"Recasting secondary portal on [{secondaryPortalable.gameObject.GetFullPathName()}]");
             CreatePortalAfterHit(false, secondaryPortalable);
         }
         // Portals will auto be linked if both are non-null by the second CreatePortalAfterHit call
