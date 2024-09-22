@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using FishNet.Connection;
 using FishNet.Object;
 using UnityEngine;
@@ -24,9 +21,13 @@ public class PortalGun : NetworkBehaviour
     
     [Header("Graphics - Scene")]
     [SerializeField] Material portalBeamMaterial;
+    
+    // TODO lots of portalable null checks checking the unity lifetime - useful to have an active state instead? or just microoptimization?
 
-    IPortalable primaryPortal;
-    IPortalable secondaryPortal;
+    internal IPortalable primaryPortalable { get; private set; }
+
+    internal IPortalable secondaryPortalable { get; private set; }
+
 
     // When a player shoots a portal, we need to convey to other players the following things:
     //  - the beam actually shot
@@ -49,15 +50,22 @@ public class PortalGun : NetworkBehaviour
 
         ServerManager.Objects.OnPreDestroyClientObjects -= RemovePortalsOnDisconnect;
     }
-
+    
     void RemovePortalsOnDisconnect(NetworkConnection conn)
     {
         if (conn != Owner) return;
         
-        primaryPortal?.RemovePortal();
-        primaryPortal = null;
-        secondaryPortal?.RemovePortal();
-        secondaryPortal = null;
+        if (primaryPortalable != null)
+        {
+            primaryPortalable.RemovePortal();
+            primaryPortalable = null;
+        }
+        
+        if (secondaryPortalable != null)
+        {
+            secondaryPortalable.RemovePortal();
+            secondaryPortalable = null;
+        }
     }
 
     public void CheckShootPortal()
@@ -89,27 +97,37 @@ public class PortalGun : NetworkBehaviour
         if (!Physics.Raycast(shotOrigin, shotDirection, out hit, range, collisionMask)) return;
         // we have a hit
         
+        // TODO the actual beam
+        
         IPortalable portalable = hit.collider.GetComponentInParent<IPortalable>();
         if (portalable == null) return;
 
+        CreatePortalAfterHit(primary, portalable);
+    }
+
+    void CreatePortalAfterHit(bool primary, IPortalable portalable)
+    {
         Portal replacedPortal;
         Portal placedPortal = portalable.PlacePortal(this, primary, out replacedPortal);
 
-        if (replacedPortal)
+        if (replacedPortal != null)
         {
+            Debug.Log("Portal " + replacedPortal.gameObject.GetFullPathName() + " was replaced!");
             // Don't disable the other portal I think the IPortalable should handle that
             // TODO solve portal lifetime. Basically we have a portalable, which could have dynamic or static portal lifetimes
             //       Even more basically, we have multiple reasons why a portal could be removed, and we need to handle updating the gun state for them all
             // But we also need some conceptualization of if one portal replaces another
             // This is probably best done with links between from the portal to the gun,
             // but nevertheless it needs planned and solved once and properly
-            if (primaryPortal != null && replacedPortal == primaryPortal.GetPortal())
+            if (primaryPortalable != null && replacedPortal == primaryPortalable.GetPortal())
             {
-                primaryPortal = null;
+                Debug.Log("Removing primary portal because it was replaced!");
+                primaryPortalable = null;
             } 
-            else if (secondaryPortal != null && replacedPortal == secondaryPortal.GetPortal())
+            else if (secondaryPortalable != null && replacedPortal == secondaryPortalable.GetPortal())
             {
-                secondaryPortal = null;
+                Debug.Log("Removing secondary portal because it was replaced!");
+                secondaryPortalable = null;
             }
         }
         
@@ -127,28 +145,48 @@ public class PortalGun : NetworkBehaviour
     {
         if (primary)
         {
-            primaryPortal?.RemovePortal();
-            primaryPortal = portalable;
+            Debug.Log($"primary portalable is the same as portalable: {primaryPortalable == portalable}");
+            if (primaryPortalable != null && primaryPortalable != portalable)
+            {
+                Debug.Log("Removing primary portal because it was shot elsewhere!");
+                primaryPortalable.RemovePortal();
+            }
+            else
+            {
+                Debug.Log("It seems like there was not a primary portalable to remove!");
+            }
+
+            primaryPortalable = portalable;
         }
         else
         {
-            secondaryPortal?.RemovePortal();
-            secondaryPortal = portalable;
+            Debug.Log($"secondary portalable is the same as portalable: {secondaryPortalable == portalable}");
+            if (secondaryPortalable != null && secondaryPortalable != portalable)
+            {
+                Debug.Log("Removing secondary portal because it was shot elsewhere!");
+                secondaryPortalable.RemovePortal();
+            }
+            else
+            {
+                Debug.Log("It seems like there was not a secondary portalable to remove!");
+            }
+
+            secondaryPortalable = portalable;
         }
     }
 
     void UpdateVisualIndicators()
     {
-        primaryIndicator.SetActive(primaryPortal != null);
-        secondaryIndicator.SetActive(secondaryPortal != null);
+        primaryIndicator.SetActive(primaryPortalable != null);
+        secondaryIndicator.SetActive(secondaryPortalable != null);
     }
 
     void AttemptToLinkPortals()
     {
-        if (primaryPortal == null || secondaryPortal == null) return;
+        if (primaryPortalable == null || secondaryPortalable == null) return;
         
-        primaryPortal.GetPortal().LinkedPortal = secondaryPortal.GetPortal();
-        secondaryPortal.GetPortal().LinkedPortal = primaryPortal.GetPortal();
+        primaryPortalable.GetPortal().LinkedPortal = secondaryPortalable.GetPortal();
+        secondaryPortalable.GetPortal().LinkedPortal = primaryPortalable.GetPortal();
     }
 
     [ServerRpc]
@@ -163,7 +201,6 @@ public class PortalGun : NetworkBehaviour
             
             ShootPortal(primary, shotOrigin, shotDirection);
         }
-
         ObserversShootPortal(primary, shotOrigin, shotDirection);
     }
 
@@ -172,6 +209,8 @@ public class PortalGun : NetworkBehaviour
     {
         if (IsOwner || IsServerStarted) return;
         // Any validity checks here?
+
+        Debug.Log("Doing observers shoot portal for other client's shot!");
         
         ShootPortal(primary, shotOrigin, shotDirection);
     }
@@ -181,16 +220,44 @@ public class PortalGun : NetworkBehaviour
     {
         if (primary)
         {
-            primaryPortal = null;
+            primaryPortalable = null;
         }
         else
         {
-            secondaryPortal = null;
+            secondaryPortalable = null;
         }
     }
 
     public Portal GetPortal(bool primary)
     {
-        return primary ? primaryPortal?.GetPortal() : secondaryPortal?.GetPortal();
+        if (primary)
+            return primaryPortalable != null ? primaryPortalable.GetPortal() : null;
+        else
+            return secondaryPortalable != null ? secondaryPortalable.GetPortal() : null;
     }
+
+    [TargetRpc]
+    internal void InitializePortalsFromServer(NetworkConnection conn, IPortalable primaryPortalable, IPortalable secondaryPortalable)
+    {
+        Debug.Log("InitializePortalsFromServer!!!");
+
+        if (IsOwner)
+        {
+            Debug.Log("Assuming both portals are null on owner: " + (primaryPortalable == null) + " " +
+                      (secondaryPortalable == null));
+        }
+        
+        if (primaryPortalable != null)
+        {
+            Debug.Log($"Recasting primary portal on [{primaryPortalable.gameObject.GetFullPathName()}]");
+            CreatePortalAfterHit(true, primaryPortalable);
+        }
+
+        if (secondaryPortalable != null)
+        {
+            Debug.Log($"Recasting secondary portal on [{secondaryPortalable.gameObject.GetFullPathName()}]");
+            CreatePortalAfterHit(false, secondaryPortalable);
+        }
+        // Portals will auto be linked if both are non-null by the second CreatePortalAfterHit call
+    }    
 }

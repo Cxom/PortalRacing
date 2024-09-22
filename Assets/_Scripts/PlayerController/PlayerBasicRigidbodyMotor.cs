@@ -1,6 +1,5 @@
 using FishNet.Object;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Units
 {
@@ -10,6 +9,7 @@ namespace Units
     /// A dummy super simple movement class for testing/implementing multiplayer code
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(PortalGun))]
     public class PlayerBasicRigidbodyMotor : NetworkBehaviour
     {
         // [SerializeField] MonoBehaviour playerInputSystem;
@@ -28,10 +28,9 @@ namespace Units
 
         bool paused = false;
 
-        public override void OnStartNetwork()
+        void Awake()
         {
-            base.OnStartNetwork();
-            
+            // TODO decouple the portal gun from the motor script, isolate a player independent of both, new input system, etc.
             _rigidbody = GetComponent<Rigidbody>();
             _portalGun = GetComponent<PortalGun>();
         }

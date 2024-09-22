@@ -10,14 +10,14 @@ public class CameraPortalRendering : MonoBehaviour
 {
     // public List<Portal> portals = new List<Portal>();
 
-    static List<Portal> portals;
+    static List<Portal> portals = new();
     
     void Start()
     {
         if (InstanceFinder.IsServerOnlyStarted) return;
         
         // find portals that are already in the world
-        portals = FindObjectsOfType<Portal>().ToList();
+        portals.AddRange(FindObjectsOfType<Portal>());
         RenderPipelineManager.beginFrameRendering += DoPortalRendering;
     }
 

@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
-using FishNet;
-using FishNet.Object;
 using Portals;
 using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Serialization;
 
 // TODO namespace
+// TODO download pro repo
 
 public class Portal : MonoBehaviour
 {
